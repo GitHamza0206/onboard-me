@@ -1,0 +1,55 @@
+backend/env
+# Global
+__pycache__/
+*.py[cod]
+*.env
+*.env.*
+.envrc
+*.sqlite3
+*.log
+*.pid
+*.db
+.DS_Store
+*.swp
+
+# Python Virtual Environment
+venv/
+env/
+.venv/
+.python-version
+
+# FastAPI specific (backend/)
+backend/__pycache__/
+backend/*.py[cod]
+backend/instance/
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.vscode/
+backend/venv/
+
+# React (frontend/)
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/.cache/
+frontend/.next/
+frontend/.turbo/
+frontend/.vscode/
+frontend/yarn.lock
+frontend/package-lock.json
+
+# Logs and IDE files
+*.log
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+ehthumbs.db
+.DS_Store
