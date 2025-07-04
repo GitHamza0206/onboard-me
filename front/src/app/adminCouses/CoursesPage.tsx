@@ -2,6 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { CourseCard } from "@/components/admin/CourseCard";
 import { RecentActivityList } from "@/components/admin/RecentActivityList";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
 
 const courses = [
   { title: "Introduction to Project Management", lastUpdated: "July 15, 2024", imageUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" },
@@ -15,6 +21,9 @@ const courses = [
 
 export function CoursesPage() {
   return (
+    <SidebarProvider>
+    <AppSidebar />
+    <SidebarInset>
     <main className="flex-1 p-8 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">My Courses</h1>
@@ -35,5 +44,7 @@ export function CoursesPage() {
       
       <RecentActivityList />
     </main>
+    </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -27,30 +27,33 @@
         --border: 0 0% 89.8%;
         --input: 0 0% 89.8%;
         --ring: 0 0% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
         --radius: 0.5rem;
+    
+        /* Sidebar */
         --sidebar-background: 0 0% 98%;
         --sidebar-foreground: 240 5.3% 26.1%;
-        --sidebar-primary: 165, 55%, 45%;
-        --sidebar-primary-foreground: 0, 0%, 100%;
-        /* --sidebar-accent: 240 4.8% 95.9%; */
-        --sidebar-accent: 165, 45%, 73%;
-        /* 165, 45%, 59%   /  165, 55%, 45%;*/
-        --sidebar-accent-foreground: 0 0% 98%;
+        
+        /* Élément actif : fond gris foncé, texte blanc */
+        --sidebar-primary: 240 5.9% 10%; 
+        --sidebar-primary-foreground: 0 0% 100%; /* Changé en blanc pur */
+    
+        /* Survol (hover) : fond gris clair, texte foncé */
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+    
         --sidebar-border: 220 13% 91%;
         --sidebar-ring: 217.2 91.2% 59.8%;
-        --toggle-checked: 160, 52%, 46%;
-        --toggle-hover: 160, 50%, 40%;
-        --chart-1: 173 58% 39%;
-        --chart-2: 12 76% 61%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-
+    
+        /* Toggle Switch */
+        --toggle-checked: 240 5.9% 10%;
+        --toggle-hover: 240 5.9% 20%;
+    
+        /* Charts */
+        --chart-1: 240 4.8% 83.9%;
+        --chart-2: 240 4.8% 63.9%;
+        --chart-3: 240 4.8% 43.9%;
+        --chart-4: 240 4.8% 23.9%;
+        --chart-5: 240 5.9% 10%;
     }
 
     .dark {

@@ -64,38 +64,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const data = {
     navMain: [
       {
-        title: "Rechercher",
-        url: "/search",
+        title: "Home",
+        url: "/home",
         icon: Search,
       },
       {
-        title: "Dashboard",
-        url: "/dashboard",
+        title: "My Courses",
+        url: "/courses",
         icon: LayoutDashboard,
       },
       {
-        title: "Campagnes",
-        url: "/campagnes",
+        title: "Analytics",
+        url: "/analytics",
         icon: Send,
       },
-      {
-        title: "Prospects",
-        url: "/prospects",
-        icon: Users,
-        // items: [
-        //   { title: "Ajouter un prospect", url: "/prospects/add" },
-        //   { title: "Gérer les prospects", url: "/prospects/manage" },
-        // ],
-      },
-      // {
-      //   title: "Suivi des campagnes",
-      //   url: "/suivi",
-      //   icon: BarChart3,
-      //   items: [
-      //     { title: "Statistiques", url: "/suivi/stats" },
-      //     { title: "Résultats", url: "/suivi/results" },
-      //   ],
-      // },
     ],
     // La propriété "projects" sera remplie dynamiquement
     projects: projects,
@@ -161,7 +143,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {/* <img src={Logo} alt="Recrut'Auto" className="w-4 h-4" /> */}
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Recrut'Auto</span>
+                <span className="truncate font-semibold">Onboard-me</span>
               </div>
             </div>
           </a>

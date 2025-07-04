@@ -5,9 +5,7 @@ import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
-import { AdminLayout } from "@/layouts/AdminLayout";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { CoursesPage } from "@/components/admin/CoursesPage"; 
+import { CoursesPage } from "@/app/coursesList/CoursesPage"; 
 import { EditorPage } from "./app/editor/page"; 
 import Layout from "./layout";
 
@@ -20,15 +18,7 @@ function Root() {
   );
 }
 
-// This component defines the main layout for the admin section.
-function AdminRoot() {
-    return (
-        <AdminLayout>
-            <AdminHeader />
-            <Outlet />
-        </AdminLayout>
-    );
-}
+
 
 const router = createBrowserRouter([
   {
