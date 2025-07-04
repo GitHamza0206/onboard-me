@@ -5,6 +5,7 @@ import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
+import { EditorPage } from "./app/editor/page"; 
 
 function Root() {
     return (
@@ -29,6 +30,14 @@ const router = createBrowserRouter([
             </Layout>
           // </ProtectedRoute>
         ) 
+      },
+      { 
+        path: "/editor", // <-- Nouvelle route
+        element: (
+            <Layout>
+              <EditorPage />
+            </Layout>
+        )
       },
       {
         path: "/",
