@@ -30,9 +30,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { SidebarMenu } from "../ui/sidebar";
-import Logo from "@/assets/logo.svg";
+// import Logo from "@/assets/logo.svg";
 
-import apiFetch from "@/app/auth/apiFetch.tsx";
+// import apiFetch from "@/app/auth/apiFetch.tsx";
 import { useNavigate } from "react-router-dom";
 
 interface Project {
@@ -104,52 +104,52 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   console.log("projects", projects);
 
   // Récupération des projets depuis l'API lors du montage du composant
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await apiFetch(`${apiUrl}/campaigns/`, {
-          headers: {
-            "Accept": "application/json",
-          },
-        }, navigate);
-        if (!response.ok) {
-          throw new Error("Erreur lors de la récupération des projets");
-        }
-        const projectsData = await response.json();
+  // useEffect(() => {
+  //   async function fetchProjects() {
+  //     try {
+  //       const response = await apiFetch(`${apiUrl}/campaigns/`, {
+  //         headers: {
+  //           "Accept": "application/json",
+  //         },
+  //       }, navigate);
+  //       if (!response.ok) {
+  //         throw new Error("Erreur lors de la récupération des projets");
+  //       }
+  //       const projectsData = await response.json();
 
-        const mappedProjects: Project[] = projectsData
-          .filter(
-            (project: any) =>
-              project &&
-              typeof project.id === "number" &&
-              typeof project.name === "string"
-          ) // Basic validation
-          .map((project: any) => ({
-            id: project.id, // <-- Include the ID
-            name: project.name,
-            url: `/campagne/${project.id}`, // Dynamic URL based on ID
-            icon: Frame, // Use the imported Frame icon component
-          }));
+  //       const mappedProjects: Project[] = projectsData
+  //         .filter(
+  //           (project: any) =>
+  //             project &&
+  //             typeof project.id === "number" &&
+  //             typeof project.name === "string"
+  //         ) // Basic validation
+  //         .map((project: any) => ({
+  //           id: project.id, // <-- Include the ID
+  //           name: project.name,
+  //           url: `/campagne/${project.id}`, // Dynamic URL based on ID
+  //           icon: Frame, // Use the imported Frame icon component
+  //         }));
 
-        setProjects(mappedProjects);
-      } catch (error: any) {
-        console.error("Erreur de récupération des projets :", error.message);
-        setProjects([]); // Vider les projets en cas d'erreur
-      } finally {
-        setLoadingProjects(false);
-      }
-    }
-    fetchProjects();
-  }, [apiUrl]); // Dépendances : lancer si l'état d'auth ou le token change
+  //       setProjects(mappedProjects);
+  //     } catch (error: any) {
+  //       console.error("Erreur de récupération des projets :", error.message);
+  //       setProjects([]); // Vider les projets en cas d'erreur
+  //     } finally {
+  //       setLoadingProjects(false);
+  //     }
+  //   }
+  //   fetchProjects();
+  // }, [apiUrl]); // Dépendances : lancer si l'état d'auth ou le token change
 
-  const handleProjectDeleted = (deletedProjectId: number) => {
-    setProjects((currentProjects) =>
-      currentProjects.filter((project) => project.id !== deletedProjectId)
-    );
-    console.log(
-      `Project with id ${deletedProjectId} removed from sidebar state.`
-    );
-  };
+  // const handleProjectDeleted = (deletedProjectId: number) => {
+  //   setProjects((currentProjects) =>
+  //     currentProjects.filter((project) => project.id !== deletedProjectId)
+  //   );
+  //   console.log(
+  //     `Project with id ${deletedProjectId} removed from sidebar state.`
+  //   );
+  // };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -158,7 +158,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <a href="/">
             <div className="flex flex-row items-center justify-center gap-2 m-2">
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground p-2">
-                <img src={Logo} alt="Recrut'Auto" className="w-4 h-4" />
+                {/* <img src={Logo} alt="Recrut'Auto" className="w-4 h-4" /> */}
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">Recrut'Auto</span>
@@ -169,12 +169,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {!loadingProjects && data.projects.length > 0 && (
-          <NavProjects
-            projects={data.projects}
-            onProjectDeleted={handleProjectDeleted}
-          />
-        )}
+        {/* {!loadingProjects && data.projects.length > 0 && (
+          // <NavProjects
+          //   projects={data.projects}
+          //   onProjectDeleted={handleProjectDeleted}
+          // />
+        )} */}
         {loadingProjects && (
           <div className="p-4 text-xs text-muted-foreground">
             Chargement des projets...
