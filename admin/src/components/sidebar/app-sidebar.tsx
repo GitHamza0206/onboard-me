@@ -34,6 +34,7 @@ import { SidebarMenu } from "../ui/sidebar";
 
 // import apiFetch from "@/app/auth/apiFetch.tsx";
 import { useNavigate } from "react-router-dom";
+import { NavAdmin } from "./nav-admin";
 
 interface Project {
   id: number;
@@ -55,8 +56,6 @@ function slugify(text: string): string {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Déclaration de l'état pour les projets
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -69,69 +68,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Search,
       },
       {
+        title: "Analytics",
+        url: "/analytics",
+        icon: Send,
+      },
+    ],
+    navAdmin: [
+      {
+        title: "Create with AI",
+        url: "/create",
+        icon: BookOpen,
+      },
+      {
+        title: "My docs",
+        url: "/docs",
+        icon: BookOpen,
+      },
+      {
         title: "My Courses",
         url: "/courses",
-        icon: LayoutDashboard,
+        icon: BookOpen,
       },
       {
         title: "Analytics",
         url: "/analytics",
         icon: Send,
       },
+      {
+        title: "Users",
+        url: "/users",
+        icon: Users,
+      },
     ],
-    // La propriété "projects" sera remplie dynamiquement
-    projects: projects,
   };
 
-  console.log("projects", projects);
-
-  // Récupération des projets depuis l'API lors du montage du composant
-  // useEffect(() => {
-  //   async function fetchProjects() {
-  //     try {
-  //       const response = await apiFetch(`${apiUrl}/campaigns/`, {
-  //         headers: {
-  //           "Accept": "application/json",
-  //         },
-  //       }, navigate);
-  //       if (!response.ok) {
-  //         throw new Error("Erreur lors de la récupération des projets");
-  //       }
-  //       const projectsData = await response.json();
-
-  //       const mappedProjects: Project[] = projectsData
-  //         .filter(
-  //           (project: any) =>
-  //             project &&
-  //             typeof project.id === "number" &&
-  //             typeof project.name === "string"
-  //         ) // Basic validation
-  //         .map((project: any) => ({
-  //           id: project.id, // <-- Include the ID
-  //           name: project.name,
-  //           url: `/campagne/${project.id}`, // Dynamic URL based on ID
-  //           icon: Frame, // Use the imported Frame icon component
-  //         }));
-
-  //       setProjects(mappedProjects);
-  //     } catch (error: any) {
-  //       console.error("Erreur de récupération des projets :", error.message);
-  //       setProjects([]); // Vider les projets en cas d'erreur
-  //     } finally {
-  //       setLoadingProjects(false);
-  //     }
-  //   }
-  //   fetchProjects();
-  // }, [apiUrl]); // Dépendances : lancer si l'état d'auth ou le token change
-
-  // const handleProjectDeleted = (deletedProjectId: number) => {
-  //   setProjects((currentProjects) =>
-  //     currentProjects.filter((project) => project.id !== deletedProjectId)
-  //   );
-  //   console.log(
-  //     `Project with id ${deletedProjectId} removed from sidebar state.`
-  //   );
-  // };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -151,17 +121,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* {!loadingProjects && data.projects.length > 0 && (
-          // <NavProjects
-          //   projects={data.projects}
-          //   onProjectDeleted={handleProjectDeleted}
-          // />
-        )} */}
-        {loadingProjects && (
-          <div className="p-4 text-xs text-muted-foreground">
-            Chargement des projets...
-          </div>
-        )}
+        <NavAdmin items={data.navAdmin} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

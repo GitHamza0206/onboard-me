@@ -3,9 +3,7 @@
 @tailwind utilities;
 
 
-
 @layer base {
-
 
     :root {
         --background: 0 0% 100%;
@@ -29,32 +27,28 @@
         --ring: 0 0% 3.9%;
         --radius: 0.5rem;
     
-        /* Sidebar */
+        /* Couleurs de la barre latérale modifiées en bleu pastel */
         --sidebar-background: 0 0% 98%;
         --sidebar-foreground: 240 5.3% 26.1%;
-        
-        /* Élément actif : fond gris foncé, texte blanc */
-        --sidebar-primary: 240 5.9% 10%; 
-        --sidebar-primary-foreground: 0 0% 100%; /* Changé en blanc pur */
-    
-        /* Survol (hover) : fond gris clair, texte foncé */
-        --sidebar-accent: 240 4.8% 95.9%;
-        --sidebar-accent-foreground: 240 5.9% 10%;
-    
+        --sidebar-primary: 210, 75%, 72%;                      /* Bleu pastel principal */
+        --sidebar-primary-foreground: 0, 0%, 100%;
+        --sidebar-accent: 210, 80%, 92%;                       /* Bleu pastel très clair pour l'accentuation */
+        --sidebar-accent-foreground: 0 0% 98%;
         --sidebar-border: 220 13% 91%;
-        --sidebar-ring: 217.2 91.2% 59.8%;
+        --sidebar-ring: 210, 90%, 65%;                         /* Anneau de focus visible mais doux */
     
-        /* Toggle Switch */
-        --toggle-checked: 240 5.9% 10%;
-        --toggle-hover: 240 5.9% 20%;
+        /* Couleurs du toggle modifiées en bleu pastel */
+        --toggle-checked: 210, 75%, 72%;                       /* Bleu pastel principal */
+        --toggle-hover: 210, 75%, 67%;                         /* Version légèrement plus foncée au survol */
     
-        /* Charts */
-        --chart-1: 240 4.8% 83.9%;
-        --chart-2: 240 4.8% 63.9%;
-        --chart-3: 240 4.8% 43.9%;
-        --chart-4: 240 4.8% 23.9%;
-        --chart-5: 240 5.9% 10%;
+        /* Couleurs du graphique avec un bleu pastel */
+        --chart-1: 210, 78%, 74%;                              /* Bleu pastel pour le graphique */
+        --chart-2: 12 76% 61%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
     }
+    
 
     .dark {
         --background: 0 0% 3.9%;

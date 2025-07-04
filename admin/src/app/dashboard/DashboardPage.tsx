@@ -3,6 +3,12 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CourseCard } from "@/components/dashboard/CourseCard";
 import { InProgressCourseCard } from "@/components/dashboard/InProgressCourseCard";
+import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+  } from "@/components/ui/sidebar"
+  import { AppSidebar } from "@/components/sidebar/app-sidebar"
 
 const recommendedCourses = [
     { title: "Mastering Project Management", description: "Learn to manage projects effectively", imageUrl: "/placeholder.svg" },
@@ -27,6 +33,9 @@ const inProgressCourses = [
 
 export function DashboardPage() {
     return (
+        <SidebarProvider>
+    <AppSidebar />
+    <SidebarInset>
         <div className="p-6 space-y-8">
             {/* Recommended for You Section */}
             <section>
@@ -60,5 +69,7 @@ export function DashboardPage() {
                 </div>
             </section>
         </div>
+        </SidebarInset>
+        </SidebarProvider>
     );
 }
