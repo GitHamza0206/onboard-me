@@ -6,20 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { List, Map, Pencil, Eye, X, Plus } from "lucide-react"; // Ajout de l'icône Plus
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { List, Map, Pencil, Eye, X, Plus, GripVertical } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-// --- Types et Données Initiales (inchangés) ---
-type Lesson = { id: number; title: string; description: string };
-type Module = { id: number; title: string; lessons: Lesson[] };
+// --- Types and Initial Data ---
+type Lesson = { id: number | string; title: string; description: string };
+type Module = { id: number | string; title: string; lessons: Lesson[] };
 
 const initialCourseData: Module[] = [
-  // ... (données identiques à la version précédente)
   {
     id: 1,
     title: "Module 1: Advanced State-Space Modeling for MPC",
@@ -49,161 +46,188 @@ const initialCourseData: Module[] = [
   },
 ];
 
+// --- Draggable Components ---
+
+function SortableLessonItem({ lesson, index, moduleId, onEdit, onDelete }: { lesson: Lesson, index: number, moduleId: Module['id'], onEdit: (moduleId: Module['id'], lesson: Lesson) => void, onDelete: (moduleId: Module['id'], lessonId: Lesson['id']) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
+  return (
+    <li ref={setNodeRef} style={style} className="group flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 bg-background">
+      <div className="flex items-center gap-3">
+        <div {...attributes} {...listeners} className="cursor-grab touch-none p-1"><GripVertical className="h-5 w-5 text-muted-foreground/50" /></div>
+        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold">{index + 1}</span>
+        <span className="font-medium">{lesson.title}</span>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <Button variant="ghost" size="icon" onClick={() => onEdit(moduleId, lesson)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button>
+        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="cursor-default"><Eye className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent><p className="max-w-sm">{lesson.description}</p></TooltipContent></Tooltip>
+        <Button variant="ghost" size="icon" onClick={() => onDelete(moduleId, lesson.id)}><X className="h-4 w-4 text-muted-foreground" /></Button>
+      </div>
+    </li>
+  );
+}
+
+function SortableModule({ module, children, isAnyModuleDragging }: { module: Module, children: React.ReactNode[], isAnyModuleDragging: boolean }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: module.id });
+    const style = { 
+        transform: CSS.Transform.toString(transform), 
+        transition,
+        opacity: isDragging ? 0.8 : 1, // Optional: make the dragged item slightly transparent
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            <div className="group flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2 flex-grow">
+                    <div {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+                        <GripVertical className="h-5 w-5 text-muted-foreground/60" />
+                    </div>
+                    {children[0]} {/* Title or Input */}
+                </div>
+                 {children[1]} {/* Edit/Delete Icons */}
+            </div>
+            {!isAnyModuleDragging && children.slice(2)} {/* Hide content if ANY module is being dragged */}
+        </div>
+    )
+}
 
 export function GenerationContent() {
   const [course, setCourse] = useState<Module[]>(initialCourseData);
-  const [editingModuleId, setEditingModuleId] = useState<number | null>(null);
+  const [editingModuleId, setEditingModuleId] = useState<Module['id'] | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
+  const [currentModuleId, setCurrentModuleId] = useState<Module['id'] | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | number | null>(null); // State to track the active dragged item
+  const sensors = useSensors(useSensor(PointerSensor));
 
-  // --- Fonctions de Manipulation ---
-  const handleDeleteModule = (moduleId: number) => setCourse(c => c.filter(m => m.id !== moduleId));
-  const handleDeleteLesson = (moduleId: number, lessonId: number) => {
+  // --- Handlers ---
+  const handleDeleteModule = (moduleId: Module['id']) => setCourse(c => c.filter(m => m.id !== moduleId));
+  const handleDeleteLesson = (moduleId: Module['id'], lessonId: Lesson['id']) => {
     setCourse(c => c.map(m => m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m));
   };
-  const handleUpdateModuleTitle = (moduleId: number, newTitle: string) => {
+  const handleUpdateModuleTitle = (moduleId: Module['id'], newTitle: string) => {
     setCourse(c => c.map(m => m.id === moduleId ? { ...m, title: newTitle } : m));
     setEditingModuleId(null);
   };
-
-  const handleOpenNewLessonModal = (moduleId: number) => {
+  const handleOpenNewLessonModal = (moduleId: Module['id']) => {
     setCurrentModuleId(moduleId);
-    // Ouvre la modale avec une leçon vide, en utilisant Date.now() pour un ID temporaire unique
-    setEditingLesson({ id: Date.now(), title: "", description: "" });
+    setEditingLesson({ id: Date.now().toString(), title: "", description: "" });
   };
-
-  const handleOpenEditLessonModal = (moduleId: number, lesson: Lesson) => {
+  const handleOpenEditLessonModal = (moduleId: Module['id'], lesson: Lesson) => {
       setCurrentModuleId(moduleId);
       setEditingLesson(lesson);
   };
-  
-  // Gère à la fois la création et la mise à jour
   const handleSaveLesson = () => {
     if (!editingLesson || currentModuleId === null) return;
-
     setCourse(currentCourse => currentCourse.map(module => {
         if (module.id === currentModuleId) {
             const lessonExists = module.lessons.some(l => l.id === editingLesson.id);
-            let newLessons;
-
-            if (lessonExists) {
-                // Mise à jour d'une leçon existante
-                newLessons = module.lessons.map(l => l.id === editingLesson.id ? editingLesson : l);
-            } else {
-                // Ajout d'une nouvelle leçon
-                newLessons = [...module.lessons, editingLesson];
-            }
+            const newLessons = lessonExists 
+                ? module.lessons.map(l => l.id === editingLesson.id ? editingLesson : l) 
+                : [...module.lessons, editingLesson];
             return { ...module, lessons: newLessons };
         }
         return module;
     }));
-    
     setEditingLesson(null);
     setCurrentModuleId(null);
   };
-  
   const handleAddNewModule = () => {
-    const newModule: Module = {
-        id: Date.now(),
-        title: "Nouveau Module (cliquez pour modifier)",
-        lessons: []
-    };
+    const newModule: Module = { id: Date.now(), title: "New Module (click to edit)", lessons: [] };
     setCourse(currentCourse => [...currentCourse, newModule]);
   };
+  
+  // --- Drag and Drop Handlers ---
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragId(event.active.id);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveDragId(null); // Reset active drag id
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const isModuleDrag = course.some(c => c.id === active.id);
+
+    if (isModuleDrag) {
+        setCourse(items => {
+            const oldIndex = items.findIndex(item => item.id === active.id);
+            const newIndex = items.findIndex(item => item.id === over.id);
+            return arrayMove(items, oldIndex, newIndex);
+        });
+    } else {
+        setCourse(currentCourse => {
+            const moduleContainingLesson = currentCourse.find(m => m.lessons.some(l => l.id === active.id));
+            if (!moduleContainingLesson) return currentCourse;
+            const oldIndex = moduleContainingLesson.lessons.findIndex(l => l.id === active.id);
+            const newIndex = moduleContainingLesson.lessons.findIndex(l => l.id === over.id);
+            const reorderedLessons = arrayMove(moduleContainingLesson.lessons, oldIndex, newIndex);
+            return currentCourse.map(m => m.id === moduleContainingLesson.id ? { ...m, lessons: reorderedLessons } : m);
+        });
+    }
+  }
+
+  // Determine if the currently dragged item is a module
+  const isDraggingModule = activeDragId ? course.some(m => m.id === activeDragId) : false;
 
   return (
     <TooltipProvider delayDuration={200}>
-      <main className="flex-1 overflow-y-auto">
-        <ScrollArea className="h-full">
-          <div className="p-8 max-w-4xl mx-auto">
-            {/* En-tête (inchangé) */}
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Mastering Model Predictive Control (MPC)</h2>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline"><List className="mr-2 h-4 w-4" />Outline</Button>
-                    <Button variant="ghost" className="text-muted-foreground"><Map className="mr-2 h-4 w-4" />Map</Button>
-                </div>
-            </div>
-            
-            <div className="space-y-10">
-              {course.map((section) => (
-                <div key={section.id}>
-                  {/* ... (Titre de module éditable - inchangé) ... */}
-                  <div className="group flex items-center justify-between gap-2 mb-4">
-                    {editingModuleId === section.id ? (
-                      <Input autoFocus defaultValue={section.title} onBlur={(e) => handleUpdateModuleTitle(section.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateModuleTitle(section.id, e.currentTarget.value) }} className="text-xl font-semibold"/>
-                    ) : ( <h3 className="text-xl font-semibold">{section.title}</h3> )}
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <Button variant="ghost" size="icon" onClick={() => setEditingModuleId(section.id)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteModule(section.id)}><X className="h-4 w-4 text-muted-foreground" /></Button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
+            <main className="flex-1 overflow-y-auto">
+                <ScrollArea className="h-full">
+                <div className="p-8 max-w-4xl mx-auto">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold">Mastering Model Predictive Control (MPC)</h2>
+                        <div className="flex items-center gap-2"><Button variant="outline"><List className="mr-2 h-4 w-4" />Outline</Button><Button variant="ghost" className="text-muted-foreground"><Map className="mr-2 h-4 w-4" />Map</Button></div>
                     </div>
-                  </div>
-                  
-                  {/* ... (Liste des leçons - inchangée) ... */}
-                   {section.lessons.length > 0 && (
-                    <ul className="space-y-1">
-                      {section.lessons.map((lesson, lessonIndex) => (
-                        <li key={lesson.id} className="group flex items-center justify-between p-3 rounded-lg hover:bg-accent/50">
-                          <div className="flex items-center gap-4">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold">{lessonIndex + 1}</span>
-                              <span className="font-medium">{lesson.title}</span>
-                          </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                             <Button variant="ghost" size="icon" onClick={() => handleOpenEditLessonModal(section.id, lesson)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button>
-                             <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="cursor-default"><Eye className="h-4 w-4 text-muted-foreground" /></Button></TooltipTrigger><TooltipContent><p className="max-w-sm">{lesson.description}</p></TooltipContent></Tooltip>
-                             <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(section.id, lesson.id)}><X className="h-4 w-4 text-muted-foreground" /></Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                   )}
-                  
-                  {/* --- Bouton pour ajouter une nouvelle leçon --- */}
-                  <div 
-                    onClick={() => handleOpenNewLessonModal(section.id)}
-                    className="mt-2 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Ajouter une leçon</span>
-                  </div>
+                    <div className="space-y-10">
+                        <SortableContext items={course.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                            {course.map((section) => (
+                                <SortableModule key={section.id} module={section} isAnyModuleDragging={isDraggingModule}>
+                                    {/* Child 0: Title */}
+                                    {editingModuleId === section.id ? (
+                                        <Input autoFocus defaultValue={section.title} onBlur={(e) => handleUpdateModuleTitle(section.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateModuleTitle(section.id, e.currentTarget.value) }} className="text-xl font-semibold"/>
+                                    ) : ( <h3 className="text-xl font-semibold flex-grow">{section.title}</h3> )}
 
+                                    {/* Child 1: Edit/Delete Icons */}
+                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Button variant="ghost" size="icon" onClick={() => setEditingModuleId(section.id)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button><Button variant="ghost" size="icon" onClick={() => handleDeleteModule(section.id)}><X className="h-4 w-4 text-muted-foreground" /></Button></div>
+                                    
+                                    {/* Child 2: Lesson List */}
+                                    <SortableContext items={section.lessons.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                                        <ul className="space-y-1 mt-4">
+                                            {section.lessons.map((lesson, lessonIndex) => (
+                                                <SortableLessonItem key={lesson.id} lesson={lesson} index={lessonIndex} moduleId={section.id} onEdit={handleOpenEditLessonModal} onDelete={handleDeleteLesson} />
+                                            ))}
+                                        </ul>
+                                    </SortableContext>
+                                
+                                    {/* Child 3: Add Lesson Button */}
+                                    <div onClick={() => handleOpenNewLessonModal(section.id)} className="mt-2 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                                        <Plus className="h-4 w-4" />
+                                        <span>Add a lesson</span>
+                                    </div>
+                                </SortableModule>
+                            ))}
+                        </SortableContext>
+                        <div onClick={handleAddNewModule} className="mt-10 flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                            <Plus className="h-4 w-4" />
+                            <span className="font-semibold">Add a module</span>
+                        </div>
+                    </div>
                 </div>
-              ))}
-
-               {/* --- Bouton pour ajouter un nouveau module --- */}
-              <div 
-                onClick={handleAddNewModule}
-                className="mt-10 flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="font-semibold">Ajouter un module</span>
-              </div>
-
-            </div>
+                </ScrollArea>
+            </main>
+        </DndContext>
+      {editingLesson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-background rounded-lg shadow-xl w-full max-w-lg p-6 space-y-4">
+              <h2 className="text-2xl font-bold">Lesson Details</h2>
+              <div><label htmlFor="lessonTitle" className="text-sm font-medium text-muted-foreground">Title</label><Input id="lessonTitle" value={editingLesson.title} onChange={(e) => setEditingLesson({...editingLesson, title: e.target.value})} className="mt-1"/></div>
+              <div><label htmlFor="lessonDescription" className="text-sm font-medium text-muted-foreground">Description</label><Textarea id="lessonDescription" value={editingLesson.description} onChange={(e) => setEditingLesson({...editingLesson, description: e.target.value})} className="mt-1" rows={5}/></div>
+              <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingLesson(null)}>Cancel</Button><Button onClick={handleSaveLesson}>Save</Button></div>
           </div>
-        </ScrollArea>
-
-        {/* --- Modale pour l'édition et la création --- */}
-        {editingLesson && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-background rounded-lg shadow-xl w-full max-w-lg p-6 space-y-4">
-                <h2 className="text-2xl font-bold">Détails de la Leçon</h2>
-                <div>
-                    <label htmlFor="lessonTitle" className="text-sm font-medium text-muted-foreground">Titre</label>
-                    <Input id="lessonTitle" value={editingLesson.title} onChange={(e) => setEditingLesson({...editingLesson, title: e.target.value})} className="mt-1"/>
-                </div>
-                 <div>
-                    <label htmlFor="lessonDescription" className="text-sm font-medium text-muted-foreground">Description</label>
-                    <Textarea id="lessonDescription" value={editingLesson.description} onChange={(e) => setEditingLesson({...editingLesson, description: e.target.value})} className="mt-1" rows={5}/>
-                </div>
-                <div className="flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => setEditingLesson(null)}>Annuler</Button>
-                    <Button onClick={handleSaveLesson}>Enregistrer</Button>
-                </div>
-            </div>
-          </div>
-        )}
-      </main>
+        </div>
+      )}
     </TooltipProvider>
   );
 }
