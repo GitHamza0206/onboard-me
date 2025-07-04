@@ -1,17 +1,32 @@
-import {createBrowserRouter, Outlet, RouterProvider} from "react-router-dom";
-import Layout from "./layout";
-import {ProtectedRoute} from "./app/auth/ProtectedRoute";
+// src/routes.tsx
+import { createBrowserRouter, Outlet, RouterProvider, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "./app/auth/ProtectedRoute";
 import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
+import { AdminLayout } from "@/layouts/AdminLayout";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { CoursesPage } from "@/components/admin/CoursesPage"; 
 import { EditorPage } from "./app/editor/page"; 
+import Layout from "./layout";
 
+// This component provides the global authentication context.
 function Root() {
+  return (
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  );
+}
+
+// This component defines the main layout for the admin section.
+function AdminRoot() {
     return (
-        <AuthProvider>
-            <Outlet/>
-        </AuthProvider>
+        <AdminLayout>
+            <AdminHeader />
+            <Outlet />
+        </AdminLayout>
     );
 }
 
@@ -39,23 +54,24 @@ const router = createBrowserRouter([
             </Layout>
         )
       },
-      {
-        path: "/",
+      { 
+        path: "/courses", // <-- Nouvelle route
         element: (
-          <ProtectedRoute>
-            <Layout></Layout>
-          </ProtectedRoute>
+            <Layout>
+              <CoursesPage />
+            </Layout>
         )
       },
+      // --- Catch-all Route ---
+      // This will redirect any unknown URL to the main courses page.
       {
-        path: "*", element: <ProtectedRoute>
-          <Layout></Layout>
-        </ProtectedRoute>
+        path: "*", 
+        element: <Navigate to="/courses" replace />
       },
     ]
   }
 ]);
 
 export default function AppRouter() {
-    return <RouterProvider router={router}/>;
+  return <RouterProvider router={router} />;
 }
