@@ -8,6 +8,7 @@ import { OnboardingPage } from "./app/course/page";
 import Layout from "./layout";
 import { DashboardPage } from "./app/dashboard/DashboardPage";
 import { MainLayout } from "./layouts/MainLayout";
+import { BackLayout } from "./layouts/BackLayout";
 
 // This component provides the global authentication context.
 function Root() {
@@ -34,6 +35,15 @@ const router = createBrowserRouter([
         ),
         children: [
           { path: "/home", element: <DashboardPage /> }, // Note : DashboardPage s'affichera dans le <Outlet> de MainLayout
+        ],
+      },
+            {
+        element: (
+          // <ProtectedRoute>
+            <BackLayout />
+          // </ProtectedRoute>
+        ),
+        children: [
           { path: "/course-onboarding", element: <OnboardingPage /> },
         ],
       },

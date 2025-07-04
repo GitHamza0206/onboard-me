@@ -5,10 +5,10 @@ import { CourseCard } from "@/components/dashboard/CourseCard";
 import { InProgressCourseCard } from "@/components/dashboard/InProgressCourseCard";
 
 const recommendedCourses = [
-    { title: "Mastering Project Management", description: "Learn to manage projects effectively", imageUrl: "/placeholder.svg" },
-    { title: "Advanced Data Analysis", description: "Dive deep into data analysis techniques", imageUrl: "/placeholder.svg" },
-    { title: "Creative Writing Workshop", description: "Unleash your creative writing potential", imageUrl: "/placeholder.svg" },
-    { title: "UX/UI Design Principles", description: "Master the core principles of design", imageUrl: "/placeholder.svg" },
+    { title: "Mastering Project Management", description: "Learn to manage projects effectively", imageUrl: "https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8=" },
+    { title: "Advanced Data Analysis", description: "Dive deep into data analysis techniques", imageUrl: "https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8=" },
+    { title: "Creative Writing Workshop", description: "Unleash your creative writing potential", imageUrl: "https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8=" },
+    { title: "UX/UI Design Principles", description: "Master the core principles of design", imageUrl: "https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8=" },
 ];
 
 const popularCourses = [
@@ -27,7 +27,7 @@ const inProgressCourses = [
 
 export function DashboardPage() {
     return (
-        <div className="p-6 space-y-8 w-full">
+        <div className="p-6 space-y-8 max-w-7xl mx-auto">
             {/* Recommended for You Section */}
             <section>
                 <h2 className="text-2xl font-semibold mb-4">Recommended for You</h2>
@@ -45,7 +45,7 @@ export function DashboardPage() {
                 <h2 className="text-2xl font-semibold mb-4">Popular Courses</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {popularCourses.map((course, index) => (
-                        <CourseCard key={index} {...course} imageUrl="/placeholder.svg" isRecommended={false} />
+                        <CourseCard key={index} {...course} imageUrl="https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8=" isRecommended={false} />
                     ))}
                 </div>
             </section>

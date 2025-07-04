@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import {
-  AudioWaveform,
+  Sparkles ,
   BarChart3,
   BookOpen,
   Bot,
@@ -17,6 +17,10 @@ import {
   Settings2,
   SquareTerminal,
   Users,
+  Plus, 
+  FileText,
+  BarChart,
+  Settings,
 } from "lucide-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
@@ -63,41 +67,36 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const data = {
     navMain: [
       {
-        title: "Home",
-        url: "/home",
-        icon: Search,
-      },
-      {
-        title: "Analytics",
-        url: "/analytics",
-        icon: Send,
-      },
-    ],
-    navAdmin: [
-      {
         title: "Create with AI",
         url: "/create",
-        icon: BookOpen,
+        icon: Sparkles,
       },
       {
-        title: "My docs",
-        url: "/docs",
-        icon: BookOpen,
-      },
-      {
-        title: "My Courses",
+        title: "Trainings",
         url: "/courses",
         icon: BookOpen,
       },
       {
+        title: "Documents",
+        url: "/documents",
+        icon: FileText ,
+      },
+    ],
+    navAdmin: [
+      {
         title: "Analytics",
         url: "/analytics",
-        icon: Send,
+        icon: BarChart ,
       },
       {
         title: "Users",
         url: "/users",
         icon: Users,
+      },
+      {
+        title: "Settings",
+        url: "/settings ",
+        icon: Settings ,
       },
     ],
   };

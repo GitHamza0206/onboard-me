@@ -38,7 +38,7 @@ export function NavAdmin({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Admin</SidebarGroupLabel>
+      <SidebarGroupLabel>Mangement</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
 

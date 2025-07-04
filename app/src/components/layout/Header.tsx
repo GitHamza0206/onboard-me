@@ -38,7 +38,7 @@ export function Header() {
           <Link to="/home" className="flex items-center gap-2">
             <img src={AppLogo} alt="Logo de l'application" className="h-8 w-8" />
             <span className="hidden font-bold sm:inline-block">
-              MonApp
+              OnboardMe
             </span>
           </Link>
         </div>
