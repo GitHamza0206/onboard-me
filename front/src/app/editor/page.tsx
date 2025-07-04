@@ -44,7 +44,7 @@ export function EditorPage() {
     <div className="flex h-screen bg-gray-50/50">
       <SidebarInset>
         <main className="flex-1 p-8 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
                 <TagsManager tags={tags} setTags={setTags} />
                 <EditableTitle text={title} setText={setTitle} placeholder="Titre de votre document..."/>
                 <TextEditor 
