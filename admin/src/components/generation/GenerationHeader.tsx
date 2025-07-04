@@ -25,6 +25,12 @@ export function GenerationHeader() {
           <h1 className="text-xl font-semibold">Mastering Model Predictive Control (MPC)</h1>
           <p className="text-sm text-muted-foreground">7 modules • 35 lessons</p>
         </div>
+        <div>
+          <Button variant="outline" className="flex items-center" onClick={() => navigate("/courseGeneration/coucou")}>
+            <Zap className="h-4 w-4 text-yellow-500" />
+            Generate
+          </Button>
+        </div>
 
       </div>
     </header>

@@ -63,9 +63,10 @@ interface TextEditorProps {
   initialContent?: string;
   onSave: (htmlContent: string) => void;
   onContentChange?: (htmlContent: string) => void;
+  showSaveButton?: boolean;
 }
 
-export const TextEditor: FC<TextEditorProps> = ({ initialContent = "", onSave, onContentChange }) => {
+export const TextEditor: FC<TextEditorProps> = ({ initialContent = "", onSave, onContentChange, showSaveButton = true }) => {
   const editor = useEditor({
     extensions: tiptapExtensions,
     content: initialContent,
@@ -102,10 +103,10 @@ export const TextEditor: FC<TextEditorProps> = ({ initialContent = "", onSave, o
   }
 
   return (
-    <div className="w-full border rounded-lg shadow-sm tiptap-editor">
-      <MenuBar editor={editor} onSave={handleSave} />
+    <div className="w-full tiptap-editor">
+      <MenuBar editor={editor} onSave={handleSave} showSaveButton={showSaveButton} />
       <FloatingMenuBar editor={editor} />
-      <div className="p-4">
+      <div className="p-4 max-w-4xl mx-auto">
         <EditorContent editor={editor} />
       </div>
     </div>
