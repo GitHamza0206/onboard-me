@@ -5,12 +5,14 @@ import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
-import { CoursesPage } from "@/app/adminCouses/CoursesPage"; 
+// Correction du chemin d'importation pour CoursesPage
+import { CoursesPage } from "@/app/admin/CoursesPage"; 
 import { EditorPage } from "./app/editor/page"; 
 import Layout from "./layout";
 import { DashboardPage } from "./app/dashboard/DashboardPage";
+// --- Import de la nouvelle page ---
+import { AdminCourseUploadPage } from "./app/admin/course-creation/page";
 
-// This component provides the global authentication context.
 function Root() {
   return (
     <AuthProvider>
@@ -18,8 +20,6 @@ function Root() {
     </AuthProvider>
   );
 }
-
-
 
 const router = createBrowserRouter([
   {
@@ -30,39 +30,45 @@ const router = createBrowserRouter([
       { 
         path: "/course-onboarding", 
         element: (
-          // <ProtectedRoute>
-            <Layout>
-              <OnboardingPage />
-            </Layout>
-          // </ProtectedRoute>
+          <Layout>
+            <OnboardingPage />
+          </Layout>
         ) 
       },
       { 
-        path: "/editor", // <-- Nouvelle route
+        path: "/editor",
         element: (
-            <Layout>
-              <EditorPage />
-            </Layout>
+          <Layout>
+            <EditorPage />
+          </Layout>
         )
       },
       { 
-        path: "/home", // <-- Nouvelle route
+        path: "/home",
         element: (
-            <Layout>
-              <DashboardPage />
-            </Layout>
+          <Layout>
+            <DashboardPage />
+          </Layout>
         )
       },
       { 
-        path: "/courses", // <-- Nouvelle route
+        path: "/courses",
         element: (
-            <Layout>
-              <CoursesPage />
-            </Layout>
+          <Layout>
+            <CoursesPage />
+          </Layout>
         )
       },
-      // --- Catch-all Route ---
-      // This will redirect any unknown URL to the main courses page.
+      // --- AJOUT DE LA NOUVELLE ROUTE ---
+      { 
+        path: "/admin/upload-course",
+        element: (
+          <Layout>
+            <AdminCourseUploadPage />
+          </Layout>
+        )
+      },
+      // --- FIN DE L'AJOUT ---
       {
         path: "*", 
         element: <Navigate to="/courses" replace />
