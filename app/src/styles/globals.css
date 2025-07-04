@@ -1,0 +1,351 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 3.9%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --accent: 0 0% 96.1%;
+        --accent-foreground: 0 0% 9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 89.8%;
+        --input: 0 0% 89.8%;
+        --ring: 0 0% 3.9%;
+        --radius: 0.5rem;
+    
+        /* Couleurs de la barre latérale modifiées en bleu pastel */
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 210, 75%, 72%;                      /* Bleu pastel principal */
+        --sidebar-primary-foreground: 0, 0%, 100%;
+        --sidebar-accent: 210, 80%, 92%;                       /* Bleu pastel très clair pour l'accentuation */
+        --sidebar-accent-foreground: 0 0% 98%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 210, 90%, 65%;                         /* Anneau de focus visible mais doux */
+    
+        /* Couleurs du toggle modifiées en bleu pastel */
+        --toggle-checked: 210, 75%, 72%;                       /* Bleu pastel principal */
+        --toggle-hover: 210, 75%, 67%;                         /* Version légèrement plus foncée au survol */
+    
+        /* Couleurs du graphique avec un bleu pastel */
+        --chart-1: 210, 78%, 74%;                              /* Bleu pastel pour le graphique */
+        --chart-2: 12 76% 61%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+    }
+    
+
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --accent: 0 0% 14.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 14.9%;
+        --input: 0 0% 14.9%;
+        --ring: 0 0% 83.1%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary: #34B292;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+        --sidebar-hover: 0, 0%, 100%;
+        --sidebar-border: 240 3.7% 15.9%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+        --chart-1: 220 70% 50%;
+        --chart-5: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-2: 340 75% 55%;
+    }
+
+
+}
+
+
+/* :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 3.9%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --accent: 0 0% 96.1%;
+        --accent-foreground: 0 0% 9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 89.8%;
+        --input: 0 0% 89.8%;
+        --ring: 0 0% 3.9%;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+        --radius: 0.5rem;
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    } */
+
+
+/* .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --accent: 0 0% 14.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 14.9%;
+        --input: 0 0% 14.9%;
+        --ring: 0 0% 83.1%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+        --sidebar-border: 240 3.7% 15.9%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    } */
+
+/* Supprime l’outline lorsqu’un élément est focus */
+*:focus {
+    outline: none;
+}
+
+/* Applique un style à toutes les scrollbars */
+* {
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: #aaa rgba(200, 200, 200, 0.1);
+    /* Firefox */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+*::-webkit-scrollbar {
+    height: 7px;
+    width: 7px;
+}
+
+*::-webkit-scrollbar-track {
+    border-radius: 5px;
+    background: rgba(200, 200, 200, 0.1);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #aaa;
+    border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+*::-webkit-scrollbar-button {
+    display: none;
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+
+
+    }
+  body {
+    @apply bg-background text-foreground;
+
+
+    }
+
+
+}
+
+
+.tiptap-editor .ProseMirror:focus {
+    outline: none;
+  }
+  
+  .tiptap-editor .ProseMirror {
+    @apply min-h-[300px];
+  }
+  
+  .tiptap-editor .ProseMirror > * + * {
+    @apply mt-3;
+  }
+  
+  .tiptap-editor .ProseMirror ul,
+  .tiptap-editor .ProseMirror ol {
+    @apply pl-4;
+  }
+  
+  .tiptap-editor .ProseMirror h1,
+  .tiptap-editor .ProseMirror h2,
+  .tiptap-editor .ProseMirror h3,
+  .tiptap-editor .ProseMirror h4,
+  .tiptap-editor .ProseMirror h5,
+  .tiptap-editor .ProseMirror h6 {
+    @apply font-bold leading-tight text-gray-800;
+  }
+  
+  .tiptap-editor .ProseMirror h1 { @apply text-4xl; }
+  .tiptap-editor .ProseMirror h2 { @apply text-3xl; }
+  .tiptap-editor .ProseMirror h3 { @apply text-2xl; }
+  
+  .tiptap-editor .ProseMirror code {
+    @apply bg-gray-200 text-gray-700 rounded-sm px-1 py-0.5 font-mono text-sm;
+  }
+  
+  .tiptap-editor .ProseMirror pre {
+    @apply bg-[#1E2126] text-white font-mono text-sm rounded-lg p-4 my-4;
+  }
+  
+  .tiptap-editor .ProseMirror pre code {
+    color: inherit;
+    padding: 0;
+    background: none;
+    font-size: 0.8rem;
+  }
+  
+  .tiptap-editor .ProseMirror img {
+    @apply max-w-full h-auto;
+  }
+  
+  .tiptap-editor .ProseMirror blockquote {
+    @apply pl-4 border-l-2 border-gray-300;
+  }
+  
+  .tiptap-editor .ProseMirror hr {
+    @apply border-t-2 border-gray-300 my-8;
+  }
+  
+  .tiptap-editor .ProseMirror table {
+    @apply border-collapse table-fixed w-full my-4;
+  }
+  
+  .tiptap-editor .ProseMirror td,
+  .tiptap-editor .ProseMirror th {
+    @apply min-w-[1em] border-2 border-gray-300 p-2 box-border align-top relative;
+  }
+  
+  .tiptap-editor .ProseMirror th {
+    @apply font-bold text-left bg-gray-100;
+  }
+  
+  .tiptap-editor .ProseMirror .column-resize-handle {
+      @apply absolute right-[-2px] top-0 bottom-[-2px] w-1 bg-teal-400 pointer-events-none;
+  }
+  
+  /* Styles pour la coloration syntaxique (similaire à l'original) */
+  .tiptap-editor .ProseMirror pre code .hljs-comment,
+  .tiptap-editor .ProseMirror pre code .hljs-quote {
+    color: #616161;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-variable,
+  .tiptap-editor .ProseMirror pre code .hljs-template-variable,
+  .tiptap-editor .ProseMirror pre code .hljs-attribute,
+  .tiptap-editor .ProseMirror pre code .hljs-tag,
+  .tiptap-editor .ProseMirror pre code .hljs-name,
+  .tiptap-editor .ProseMirror pre code .hljs-regexp,
+  .tiptap-editor .ProseMirror pre code .hljs-link,
+  .tiptap-editor .ProseMirror pre code .hljs-name,
+  .tiptap-editor .ProseMirror pre code .hljs-selector-id,
+  .tiptap-editor .ProseMirror pre code .hljs-selector-class {
+    color: #f98181;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-number,
+  .tiptap-editor .ProseMirror pre code .hljs-meta,
+  .tiptap-editor .ProseMirror pre code .hljs-built_in,
+  .tiptap-editor .ProseMirror pre code .hljs-builtin-name,
+  .tiptap-editor .ProseMirror pre code .hljs-literal,
+  .tiptap-editor .ProseMirror pre code .hljs-type,
+  .tiptap-editor .ProseMirror pre code .hljs-params {
+    color: #fbbc88;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-string,
+  .tiptap-editor .ProseMirror pre code .hljs-symbol,
+  .tiptap-editor .ProseMirror pre code .hljs-bullet {
+    color: #b9f18d;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-title,
+  .tiptap-editor .ProseMirror pre code .hljs-section {
+    color: #faf594;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-keyword,
+  .tiptap-editor .ProseMirror pre code .hljs-selector-tag {
+    color: #70cff8;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-emphasis {
+    font-style: italic;
+  }
+  
+  .tiptap-editor .ProseMirror pre code .hljs-strong {
+    font-weight: 700;
+  }
