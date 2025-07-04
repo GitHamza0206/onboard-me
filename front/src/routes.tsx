@@ -1,77 +1,68 @@
 // src/routes.tsx
 import { createBrowserRouter, Outlet, RouterProvider, Navigate } from "react-router-dom";
-import { ProtectedRoute } from "./app/auth/ProtectedRoute";
+// import { ProtectedRoute } from "./app/auth/ProtectedRoute"; // <-- Commenté ou supprimé
 import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
-import { AdminLayout } from "@/layouts/AdminLayout";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { CoursesPage } from "@/components/admin/CoursesPage"; 
-import { EditorPage } from "./app/editor/page"; 
+import { DashboardPage } from "@/pages/DashboardPage";
+import { EditorPage } from "./app/editor/page";
 import Layout from "./layout";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 
-// This component provides the global authentication context.
+// Ce composant fournit le contexte d'authentification global.
 function Root() {
-  return (
-    <AuthProvider>
-      <Outlet />
-    </AuthProvider>
-  );
-}
-
-// This component defines the main layout for the admin section.
-function AdminRoot() {
     return (
-        <AdminLayout>
-            <AdminHeader />
+        <AuthProvider>
             <Outlet />
-        </AdminLayout>
+        </AuthProvider>
     );
 }
 
 const router = createBrowserRouter([
-  {
-    element: <Root />,
-    children: [
-      { path: "/auth", element: <Layout><AuthPage /></Layout> },
-      { path: "/register", element: <Layout><RegisterPage /></Layout> },
-      { 
-        path: "/course-onboarding", 
-        element: (
-          // <ProtectedRoute>
-            <Layout>
-              <OnboardingPage />
-            </Layout>
-          // </ProtectedRoute>
-        ) 
-      },
-      { 
-        path: "/editor", // <-- Nouvelle route
-        element: (
-            <Layout>
-              <EditorPage />
-            </Layout>
-        )
-      },
-      { 
-        path: "/courses", // <-- Nouvelle route
-        element: (
-            <Layout>
-              <CoursesPage />
-            </Layout>
-        )
-      },
-      // --- Catch-all Route ---
-      // This will redirect any unknown URL to the main courses page.
-      {
-        path: "*", 
-        element: <Navigate to="/courses" replace />
-      },
-    ]
-  }
+    {
+        element: <Root />,
+        children: [
+            { path: "/auth", element: <Layout><AuthPage /></Layout> },
+            { path: "/register", element: <Layout><RegisterPage /></Layout> },
+            {
+                path: "/",
+                // Le composant <ProtectedRoute> a été retiré ici
+                element: (
+                    <DashboardLayout>
+                        <Outlet />
+                    </DashboardLayout>
+                ),
+                children: [
+                    {
+                        path: "dashboard",
+                        element: <DashboardPage />,
+                    },
+                    {
+                        path: "editor",
+                        element: <EditorPage />,
+                    },
+                    {
+                        path: "onboarding",
+                        element: <OnboardingPage />
+                    },
+                    // Redirige la racine "/" vers "/dashboard"
+                    {
+                        index: true,
+                        element: <Navigate to="/dashboard" replace />,
+                    },
+                ]
+            },
+            // --- Route par défaut ---
+            // Redirige toute URL inconnue vers la page principale du tableau de bord.
+            {
+                path: "*",
+                element: <Navigate to="/dashboard" replace />
+            },
+        ]
+    }
 ]);
 
 export default function AppRouter() {
-  return <RouterProvider router={router} />;
+    return <RouterProvider router={router} />;
 }
