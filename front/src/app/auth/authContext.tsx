@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
     }
   }, [extensionId]);
 
+  
 
   // Fonction pour récupérer le profil utilisateur
   const fetchUserProfile = useCallback(async (currentToken: string): Promise<UserProfile | null> => {
@@ -110,27 +111,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
   }, [fetchUserProfile, sendTokenToExtension]); 
 
 
-  // Fonction de connexion mise à jour
+  
   const login = useCallback(async (newToken: string) => {
-    setLoading(true);
-    localStorage.setItem("token", newToken);
-    setToken(newToken); // Mettre à jour l'état du token
+      setLoading(true);
+      localStorage.setItem("token", newToken);
+      setToken(newToken);
 
-    const profile = await fetchUserProfile(newToken);
+      const profile = await fetchUserProfile(newToken);
 
-    if (profile) {
-      setUser(profile); // Mettre à jour l'état user avec le profil complet
-      sendTokenToExtension(newToken); // Envoyer à l'extension après succès
-       navigate("/check-extension");
-    } else {
-      console.error("Impossible de récupérer le profil après la connexion.");
-      localStorage.removeItem("token"); // Nettoyer
-      setUser(null);
-      setToken(null);
-    }
-    setLoading(false);
-  }, [fetchUserProfile, navigate, sendTokenToExtension]); // Ajouter sendTokenToExtension
-
+      if (profile) {
+          setUser(profile);
+          sendTokenToExtension(newToken);
+          navigate("/dashboard");
+      } else {
+          console.error("Impossible de récupérer le profil après la connexion.");
+          localStorage.removeItem("token");
+          setUser(null);
+          setToken(null);
+      }
+      setLoading(false);
+  }, [fetchUserProfile, navigate, sendTokenToExtension]);
 
   // Fonction de déconnexion
   const logout = useCallback(() => {
