@@ -13,25 +13,24 @@ export function OnboardingPage() {
   );
   const { toast } = useToast();
 
-  const handleSave = (htmlContent: string) => {
+  const handleSave = () => {
     console.log("--- Contenu Sauvegardé ---");
     console.log("Titre:", title);
-    console.log("Contenu HTML:", htmlContent);
+    console.log("Contenu HTML:", content); // Le contenu est lu depuis l'état
     toast({
-      title: "✅ Contenu Sauvegardé",
-      description: "Les modifications ont été enregistrées.",
+      title: "✅ Leçon Sauvegardée",
+      description: "Vos modifications ont été enregistrées avec succès.",
     });
   };
 
   return (
     <div className="flex h-screen bg-white text-gray-800 flex-col">
-      <HomeHeader title={title} setTitle={setTitle} />
+      <HomeHeader title={title} setTitle={setTitle} onSave={handleSave} />
       <div className="flex-1 overflow-hidden flex">
         <CourseNav />
         <CourseContent
           content={content}
           setContent={setContent}
-          onSave={handleSave}
         />
         <SupportChat />
       </div>

@@ -1,21 +1,22 @@
 // src/components/generation/HomeHeader.tsx
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Save } from "lucide-react";
 import { EditableTitle } from "../editor/EditableTitle";
 
 interface HomeHeaderProps {
   title: string;
   setTitle: (title: string) => void;
+  onSave: () => void;
 }
 
-export function HomeHeader({ title, setTitle }: HomeHeaderProps) {
+export function HomeHeader({ title, setTitle, onSave }: HomeHeaderProps) {
   const navigate = useNavigate();
 
   return (
-    <header className="flex-shrink-0 border-b bg-background px-4 py-1">
+    <header className="flex-shrink-0 border-b bg-background px-4 py-2">
       <div className="relative flex items-center justify-between h-9">
-        {/* Back Button */}
+        {/* Left Aligned Button */}
         <Button
           variant="ghost"
           className="flex items-center text-muted-foreground hover:bg-transparent hover:text-accent-foreground"
@@ -34,8 +35,11 @@ export function HomeHeader({ title, setTitle }: HomeHeaderProps) {
           />
         </div>
 
-        {/* Spacer to keep title perfectly centered */}
-        <div />
+        {/* Right Aligned Button */}
+        <Button variant="outline" onClick={onSave}>
+          <Save className="mr-2 h-4 w-4" />
+          <span>Save</span>
+        </Button>
       </div>
     </header>
   );
