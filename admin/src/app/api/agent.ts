@@ -63,7 +63,7 @@ export const streamAgentResponse = async (text: string, threadId: string | null,
   const { onMessage, onValues, onError, onClose } = callbacks;
 
   try {
-    await fetchEventSource(`${import.meta.env.VITE_API_URL}/agent/runs/stream`, {
+    await fetchEventSource(`${API_URL}/runs/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

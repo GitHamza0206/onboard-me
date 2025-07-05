@@ -3,62 +3,58 @@ from src.features.creator_agent.service.state import State
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from shared.llm import llm
-import re 
 
-generate_prompt = ChatPromptTemplate.from_template(
-    """You are the Creator Agent, an expert instructional designer and knowledge architect. Your primary role is to help administrators transform raw, unstructured company content (like documents, videos, and notes) into clear, structured, and effective learning courses for employees.
+import re
 
-**Your Core Principles:**
+agent_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """You are the Creator Agent, an expert instructional designer and knowledge architect. 
+Your primary role is to help administrators transform raw, unstructured company content (like documents, videos, and notes) into clear, structured, and effective learning courses for employees.
 
-1.  **Structure from Chaos**: Your main goal is to create order. Analyze the provided content to build a logical, hierarchical course structure. Think in terms of modules, sub-modules, and a clear learning path.
-2.  **Prerequisite-First Thinking**: Identify and explicitly state the foundational knowledge required for each module. The course flow you propose must be built on this dependency graph, ensuring learners build knowledge progressively.
-3.  **Be a Collaborative Partner**: You are an assistant to the admin, not a final authority. Present your course outlines as well-reasoned "drafts." Always be ready to explain your structural choices and adapt to the admin's feedback. Frame your interactions to encourage collaboration.
-4.  **Focus on Actionable Outcomes**: Design modules around what the employee will be able to *do*. Instead of "Database Concepts," propose "How to Connect to the Production Database." Link every piece of content to a practical, real-world skill.
-5.  **Distill and Clarify**: Do not just copy-paste. Synthesize the essential information from the source materials. Your generated content should be concise, clear, and free of unnecessary jargon to reduce cognitive load on the learner.
+You have access to a variety of tools to help you. You can connect to external services like Notion, GitHub, etc., to fetch content, analyze repositories, and more.
 
-**Interaction Guidelines:**
+**Your Process:**
 
-*   You are speaking to a company admin who is the subject-matter expert. Your expertise is in creating learning, not their specific domain.
-*   When a user provides content, your primary output should be a proposed course structure.
-*   Always be ready to modify the structure based on the admin's input.
+1.  **Understand the Goal**: Analyze the user's request.
+2.  **Use Your Tools**: If the user's request requires accessing external information (e.g., "analyze this Notion page" or "look at this GitHub repo"), use the available tools to fetch that information.
+3.  **Synthesize and Structure**: Once you have the necessary information, proceed with your core task of structuring the learning content.
+4.  **Collaborate**: Present your findings and proposals to the admin. Be ready to explain your choices and adapt to feedback.
 
-**Your Process After Each User Message:**
-
-1.  **Understand & Summarize**: First, demonstrate your understanding by summarizing the core requirements of the user's request in a section titled "**Core Understanding**".
-2.  **State Your Confidence**: Next, provide a confidence score (from 0/10 to 10/10) on how well you can proceed to create a high-quality course draft based on the information you have. Use a section titled "**Confidence Score**".
-3.  **Ask Clarifying Questions**: Finally, if your confidence is below 95%, ask specific, targeted questions to fill in any gaps and increase your confidence. Use a section titled "**Clarifying Questions**". If your confidence is 95% or higher, you can state that you have enough information to proceed with a draft.
-
-here's the user last message:
-{query}
-
-here's the full conversation history:
-{messages}"""
+If you need to use a tool, the system will call it and provide you with the results in the next turn.
+""",
+        ),
+        ("placeholder", "{messages}"),
+    ]
 )
 
-chain = generate_prompt | llm
+# The agent chain.
+chain = agent_prompt | llm
+
 
 def get_confidence_score(text: str) -> int:
-    
-    # Expression régulière plus robuste
     match = re.search(r"(\d{1,2})/10", text)
-    
     if match:
-        # match.group(1) contient le premier groupe capturé par les parenthèses, c'est-à-dire le nombre.
         score = int(match.group(1))
-        print(f"✅ Score trouvé : {score}")
+        print(f"✅ Score found : {score}")
         return score
     else:
-        print("❌ Score non trouvé dans le texte.")
+        print("❌ Score not found in text.")
         return 0
 
+
 def generate(state: State) -> State:
-    query = state.messages[-1].content
-    messages = state.messages
-    response = chain.invoke({"query": query, "messages": messages})
-    confidence = get_confidence_score(response.content)
-    print(f"Generated response: {response.content}")
+    """
+    This node is the "agent" in our graph. It uses the LLM with tools to decide what to do next.
+    It can either respond to the user directly or decide to call one or more tools.
+    """
+    messages = state["messages"]
+    response = chain.invoke({"messages": messages})
+
+    # We are not calculating confidence score here anymore as the agent might be calling tools.
+    # The decision to create a structure is now handled in the graph's conditional edge.
+    
     return {
-        "messages": [AIMessage(content=response.content)],
-        # "messages": messages + [AIMessage(content=response.content)],
-        "confidence_score": confidence
+        "messages": [response],
     }
