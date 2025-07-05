@@ -5,12 +5,22 @@ from src.features.auth.dependencies import get_current_admin_user
 from . import schema
 from uuid import UUID
 from typing import List
+import secrets 
+import string 
+from datetime import datetime
 
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
-    dependencies=[Depends(get_current_admin_user)] # Protège toutes les routes de ce routeur
+    dependencies=[Depends(get_current_admin_user)]
 )
+
+def generate_temporary_password(length=12):
+    """Generates a secure temporary password."""
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for i in range(length))
+    return password
+
 
 @router.post("/users", response_model=schema.UserProfileResponse, status_code=status.HTTP_201_CREATED)
 def create_user_as_admin(
@@ -18,76 +28,92 @@ def create_user_as_admin(
     admin_user: dict = Depends(get_current_admin_user)
 ):
     """
-    (Admin uniquement) Invite un nouvel utilisateur par e-mail.
-    Un e-mail d'invitation est envoyé pour que l'utilisateur définisse son propre mot de passe.
+    (Admin only) Creates a new user directly.
+    A temporary password is generated and must be communicated to the user.
     """
     admin_id = admin_user.get('sub')
+    temp_password = generate_temporary_password()
 
     try:
-        # 1. Invite l'utilisateur via Supabase Auth. Cela envoie un e-mail d'invitation.
-        # Cette fonction crée l'utilisateur et envoie un lien pour définir le mot de passe.
-        invited_user_response = supabase.auth.admin.invite_user_by_email(
-            new_user_data.email
-        )
-        new_user = invited_user_response.user
+        created_user_response = supabase.auth.admin.create_user({
+            "email": new_user_data.email,
+            "password": temp_password,
+            "email_confirm": True
+        })
+        new_user = created_user_response.user
         new_user_id = new_user.id
 
-        # 2. Met à jour le profil (qui a été créé par le trigger) avec les nom/prénom
         supabase.table('profiles').update({
             "prenom": new_user_data.prenom,
             "nom": new_user_data.nom
         }).eq('id', new_user_id).execute()
 
-        # 3. Lie le nouvel utilisateur à l'admin dans la table 'managed_users'
         supabase.table('managed_users').insert({
             "manager_id": admin_id,
             "user_id": new_user_id
         }).execute()
 
-        # 4. Récupère le profil final pour le retourner dans la réponse
         final_profile = supabase.table('profiles').select('*').eq('id', new_user_id).single().execute().data
-        final_profile['email'] = new_user.email # Ajoute l'email pour une réponse complète
+        final_profile['email'] = new_user.email
+
+        # --- CORRECTION HERE ---
+        # `new_user.created_at` is already a datetime object.
+        final_profile['registrationDate'] = new_user.created_at.strftime('%d/%m/%Y')
+        final_profile['lastActivity'] = "Jamais"
+
+        print(f"--- TEMPORARY PASSWORD FOR {new_user_data.email} : {temp_password} ---")
 
         return final_profile
 
     except Exception as e:
-        # Gère le cas où l'utilisateur existe déjà pour éviter les erreurs
-        if 'User already registered' in str(e):
-             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An user with this email already exists.")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to invite user: {e}")
+        if 'User already registered' in str(e) or 'duplicate key value' in str(e):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create user: {e}")
 
 
 @router.get("/users", response_model=List[schema.UserProfileResponse])
 def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
     """
-    (Admin uniquement) Récupère la liste de tous les utilisateurs managés par l'admin connecté.
+    (Admin only) Retrieves the list of all users managed by the logged-in admin.
     """
     admin_id = admin_user.get('sub')
 
     try:
-        # 1. Récupérer les IDs de tous les utilisateurs liés à cet admin
         managed_users_response = supabase.table('managed_users').select('user_id').eq('manager_id', admin_id).execute()
         
         if not managed_users_response.data:
-            return [] # Retourne une liste vide si l'admin ne manage personne
+            return []
 
         managed_user_ids = [item['user_id'] for item in managed_users_response.data]
-
-        # 2. Récupérer les profils complets pour ces IDs
         profiles_response = supabase.table('profiles').select('*').in_('id', managed_user_ids).execute()
         profiles = profiles_response.data
 
-        # 3. Enrichir chaque profil avec l'e-mail depuis Supabase Auth
+        enriched_profiles = []
         for profile in profiles:
             try:
-                # Récupère les données d'authentification pour trouver l'e-mail
                 auth_user = supabase.auth.admin.get_user_by_id(profile['id']).user
-                profile['email'] = auth_user.email
-            except Exception:
-                # Au cas où l'utilisateur existerait dans profiles mais pas dans auth (improbable)
-                profile['email'] = "email.not.found@example.com"
+                
+                # --- CORRECTION HERE ---
+                # `auth_user.created_at` and `auth_user.last_sign_in_at` are already datetime objects.
+                registration_date = auth_user.created_at.strftime('%d/%m/%Y')
+                last_activity = "Never"
+                if auth_user.last_sign_in_at:
+                    last_activity = auth_user.last_sign_in_at.strftime('%d/%m/%Y %H:%M')
+
+                enriched_profile = {
+                    **profile,
+                    "email": auth_user.email,
+                    "registrationDate": registration_date,
+                    "lastActivity": last_activity,
+                    "onboardingStatus": "En cours",
+                    "progress": 50
+                }
+                enriched_profiles.append(enriched_profile)
+            except Exception as e:
+                print(f"Could not enrich profile for user {profile['id']}: {e}")
+                continue
         
-        return profiles
+        return enriched_profiles
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to retrieve users: {e}")
