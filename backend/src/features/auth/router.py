@@ -89,3 +89,33 @@ def get_my_profile(current_user: dict = Depends(get_current_user)):
         return response.data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"User profile not found: {e}")
+    
+@router.post("/signup/admin", status_code=status.HTTP_201_CREATED)
+def signup_admin(credentials: schema.AdminSignUpCredentials):
+    """
+    Inscrit un nouvel utilisateur directement en tant qu'ADMINISTRATEUR.
+    Cette route est maintenant publique.
+    """
+    try:
+        # 1. Crée l'utilisateur dans Supabase Auth
+        response = supabase.auth.sign_up({
+            "email": credentials.email,
+            "password": credentials.password,
+        })
+        new_user = response.user
+        new_user_id = new_user.id
+
+        # 2. Met à jour le profil (créé par le trigger) pour le passer admin
+        supabase.table('profiles').update({
+            "is_admin": True,
+            "prenom": credentials.prenom,
+            "nom": credentials.nom
+        }).eq('id', new_user_id).execute()
+        
+        return {"message": "Admin user created successfully."}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Admin signup failed: {e}"
+        )
