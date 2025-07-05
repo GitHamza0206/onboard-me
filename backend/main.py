@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, agent
+from src.features.auth.router import router as auth_router
+from src.features.creator_agent.router import router as agent_router
 from dotenv import load_dotenv
 import uvicorn
 
@@ -41,8 +42,8 @@ app.add_middleware(
 # will be available under the "/auth" path. For example, the "signin" route
 # will be at "/auth/signin".
 # The `tags` parameter helps to group the routes in the auto-generated API docs.
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(agent.router, prefix="/agent", tags=["Agent"])
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(agent_router, prefix="/agent", tags=["Agent"])
 
 @app.get("/")
 def read_root():
