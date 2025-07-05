@@ -15,7 +15,6 @@ interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUpAdmin: (details: {email: string, password: string, prenom?: string, nom?: string}) => Promise<void>;
   signOut: () => void;
   loading: boolean;
 }
@@ -84,26 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [apiUrl, fetchUserProfile, navigate]);
 
-  const signUpAdmin = useCallback(async (details) => {
-     try {
-        // On appelle la route /auth/signup/admin du backend
-        const response = await fetch(`${apiUrl}/auth/signup/admin`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(details)
-        });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.detail || "L'inscription a échoué");
-        }
-        // Rediriger vers la page de connexion après une inscription réussie
-        navigate('/auth');
-     } catch (error) {
-        console.error(error);
-        // Gérer l'affichage de l'erreur
-     }
-  }, [apiUrl, navigate]);
-
+ 
 
   const signOut = useCallback(() => {
     localStorage.removeItem("token");
@@ -112,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate("/auth");
   }, [navigate]);
 
-  const value = { user, token, signIn, signUpAdmin, signOut, loading };
+  const value = { user, token, signIn, signOut, loading };
 
   return (
     <AuthContext.Provider value={value}>

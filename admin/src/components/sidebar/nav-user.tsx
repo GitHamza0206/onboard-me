@@ -22,8 +22,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import { useAuth } from "@/app/auth/authContext"
-// import apiFetch from "@/app/auth/apiFetch.tsx";
-// import { useUser } from "@/app/auth/UserContext"; // Import du contexte utilisateur
 
 // Fonction utilitaire pour obtenir les initiales
 const getInitials = (name: string): string => {
