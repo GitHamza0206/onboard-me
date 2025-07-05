@@ -12,6 +12,7 @@ import { CreatePage } from "./app/create/page";
 import { GenerationPage } from "./app/generation/structure";
 import { UsersPage } from "./app/users/page";
 import { AnalyticsPage } from "./app/analytics/page";
+import DocumentManagementPage from "./app/documents/page";
 
 // This component provides the global authentication context.
 function Root() {
@@ -66,7 +67,7 @@ const router = createBrowserRouter([
           // </ProtectedRoute>
         )
       },
-      { 
+      {
         path: "/users",
         element: (
           <Layout>
@@ -74,11 +75,19 @@ const router = createBrowserRouter([
           </Layout>
         )
       },
-      { 
+      {
         path: "/analytics",
         element: (
           <Layout>
             <AnalyticsPage />
+          </Layout>
+        )
+      },
+      {
+        path: "/documents",
+        element: (
+          <Layout>
+            <DocumentManagementPage />
           </Layout>
         )
       },
