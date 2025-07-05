@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Github, BookText } from "lucide-react";
+import { authorizeToolkit } from '@/app/api/integrations';
+import { useAuth } from '@/app/auth/authContext';
 
 const integrationsList = [
     { name: "GitHub", icon: <Github className="h-6 w-6" />, connected: false },
@@ -25,15 +27,51 @@ export function IntegrationsModal({
     isOpen: boolean;
     onClose: () => void;
 }) {
+    const { token } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [integrations, setIntegrations] = useState(integrationsList);
 
-    const handleToggleConnection = (name: string) => {
-        setIntegrations(prev =>
-            prev.map(int =>
-                int.name === name ? { ...int, connected: !int.connected } : int
-            )
-        );
+    const handleToggleConnection = async (name: string) => {
+        const integration = integrations.find(int => int.name === name);
+        if (!integration) return;
+
+        if (integration.connected) {
+            // In a real application, you would make an API call to your backend
+            // to properly disconnect the integration and handle any cleanup.
+            console.log(`TODO: Implement backend disconnection for ${name}`);
+            setIntegrations(prev =>
+                prev.map(int =>
+                    int.name === name ? { ...int, connected: false } : int
+                )
+            );
+        } else {
+            // The user wants to connect this integration.
+            const toolkit = name.toLowerCase();
+            if (!token) {
+                console.error("Authentication token not found.");
+                // Optionally, show a toast to the user.
+                return;
+            }
+            try {
+                const { redirect_url } = await authorizeToolkit(toolkit, token);
+                
+                // Open a new window for the user to go through the authorization process.
+                window.open(redirect_url, '_blank', 'noopener,noreferrer');
+
+                // For a better user experience, we can optimistically update the UI.
+                // This assumes the user will successfully complete the authorization.
+                // A more robust solution would involve waiting for a callback from the backend
+                // (e.g., via WebSockets or polling) to confirm the connection status.
+                setIntegrations(prev =>
+                    prev.map(int =>
+                        int.name === name ? { ...int, connected: true } : int
+                    )
+                );
+            } catch (error) {
+                console.error('Failed to get authorization URL', error);
+                // Here you might want to show a toast to the user
+            }
+        }
     };
 
     const filteredIntegrations = integrations.filter((integration) =>
