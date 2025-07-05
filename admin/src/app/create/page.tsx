@@ -5,6 +5,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import { Send, Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,14 +50,26 @@ export function CreatePage() {
 
     const callbacks: StreamCallbacks = {
       onMessage: (token: string) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId ? { ...msg, text: msg.text + token } : msg
-          )
-        );
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && lastMessage.id === aiMessageId) {
+            lastMessage.text += token;
+          }
+          return newMessages;
+        });
       },
       onUpdate: (update: UpdatePayload) => {
-        console.log("SSE Update:", update);
+        const serverMessages: Message[] = update.messages
+          .filter(m => m.type === 'human' || m.type === 'ai')
+          .map((msg, index) => ({
+            id: msg.id || `${aiMessageId}-chunk-${index}`,
+            sender: msg.type === "human" ? "user" : "ai",
+            text: msg.content,
+          }));
+
+        // Replace all but the last message, which is being actively streamed
+        setMessages(serverMessages);
       },
       onValues: (values: ValuesPayload) => {
         console.log("SSE Values:", values);
@@ -177,7 +191,9 @@ export function CreatePage() {
                           : "bg-muted"
                       )}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.text || "..."}</p>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.text || "..."}
+                      </ReactMarkdown>
                     </div>
                     {message.sender === "user" && (
                       <Avatar>
