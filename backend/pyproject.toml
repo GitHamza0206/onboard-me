@@ -12,6 +12,8 @@ dependencies = [
     "pydantic>=2.11.7",
     "python-dotenv>=1.1.1",
     "python-multipart>=0.0.20",
-    "simba-client>=0.3.0",
     "uvicorn>=0.35.0",
+    "supabase",
+    "pydantic[email]",
+    "PyJWT[crypto]"
 ]

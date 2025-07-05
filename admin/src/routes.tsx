@@ -34,61 +34,77 @@ const router = createBrowserRouter([
       {
         path: "/create", // <-- Add the new route here
         element: (
-          <Layout>
-            <CreatePage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <CreatePage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {
         path: "/editor", // <-- Nouvelle route
         element: (
-          <Layout>
-            <EditorPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <EditorPage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {
         path: "/courses", // <-- Nouvelle route
         element: (
-          <Layout>
-            <CoursesPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <CoursesPage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {
         path: "/generation/:courseId",
-        element: <GenerationPage /> // This page has its own full layout
+        element: (
+          <ProtectedRoute>
+            <GenerationPage />
+          </ProtectedRoute>
+        )
       },
       {
         path: "/courseGeneration/:courseId",
         element: (
-          // <ProtectedRoute>
-          <OnboardingPage />
-          // </ProtectedRoute>
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
         )
       },
       {
         path: "/users",
         element: (
-          <Layout>
-            <UsersPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <UsersPage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {
         path: "/analytics",
         element: (
-          <Layout>
-            <AnalyticsPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <AnalyticsPage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {
         path: "/documents",
         element: (
-          <Layout>
-            <DocumentManagementPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <DocumentManagementPage />
+            </Layout>
+          </ProtectedRoute>
         )
       },
       {

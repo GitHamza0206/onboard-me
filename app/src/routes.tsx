@@ -3,7 +3,6 @@ import { createBrowserRouter, Outlet, RouterProvider, Navigate } from "react-rou
 import { ProtectedRoute } from "./app/auth/ProtectedRoute";
 import { AuthProvider } from "./app/auth/authContext";
 import { AuthPage } from "./app/auth/page";
-import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/course/page";
 import Layout from "./layout";
 import { DashboardPage } from "./app/dashboard/DashboardPage";
@@ -26,12 +25,11 @@ const router = createBrowserRouter([
     element: <Root />,
     children: [
       { path: "/auth", element: <Layout><AuthPage /></Layout> },
-      { path: "/register", element: <Layout><RegisterPage /></Layout> },
       {
         element: (
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <MainLayout />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         ),
         children: [
           { path: "/home", element: <DashboardPage /> }, // Note : DashboardPage s'affichera dans le <Outlet> de MainLayout
@@ -39,9 +37,9 @@ const router = createBrowserRouter([
       },
             {
         element: (
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <BackLayout />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         ),
         children: [
           { path: "/course-onboarding", element: <OnboardingPage /> },

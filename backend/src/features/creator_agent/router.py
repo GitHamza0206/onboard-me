@@ -6,7 +6,7 @@ import json
 import asyncio
 from langchain_core.messages import HumanMessage
 
-from services.creator_agent.graph import graph
+from src.features.creator_agent.service.graph import graph
 
 router = APIRouter()
 

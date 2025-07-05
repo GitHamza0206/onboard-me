@@ -1,4 +1,5 @@
 backend/env
+backend/src/backend.egg-info
 # Global
 __pycache__/
 *.py[cod]
