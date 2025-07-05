@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,7 +19,6 @@ import {
   ErrorPayload,
   streamAgentResponse,
   StreamCallbacks,
-  UpdatePayload,
   ValuesPayload,
 } from "@/app/api/agent";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,6 @@ export function CreatePage() {
     const aiMessageId = uuidv4();
     const aiPlaceholder: Message = { id: aiMessageId, sender: "ai", text: "" };
 
-    // Mise à jour de l'état en une seule fois pour éviter les erreurs
     setMessages((prev) => [...prev, userMessage, aiPlaceholder]);
     
     setNewMessage("");
@@ -74,10 +73,16 @@ export function CreatePage() {
 
     const callbacks: StreamCallbacks = {
       onMessage: (token: string) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId ? { ...msg, text: msg.text + token } : msg
-          )
+        if (token === "") return; // Ignore empty tokens to prevent unnecessary updates
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => {
+            if (msg.id !== aiMessageId) return msg;
+            
+            // If the incoming token contains the current text as a prefix, replace instead of append
+            const shouldReplace = token.startsWith(msg.text);
+            const newText = shouldReplace ? token : msg.text + token;
+            return { ...msg, text: newText };
+          })
         );
       },
       onValues: (values: ValuesPayload & { thread_id?: string }) => {
@@ -151,17 +156,20 @@ export function CreatePage() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="topic-input" className="sr-only">
-                      What can I help you learn?
+                      Describe your idea
                     </Label>
-                    <Input
-                      id="topic-input"
-                      type="text"
-                      placeholder="Enter a topic"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleGenerate()}
-                      className="h-11 text-base"
-                    />
+                    <div className="flex flex-col w-full rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring">
+                      <Textarea
+                        id="topic-input"
+                        placeholder="describe your idea here..."
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        className="h-56 text-base border-0 shadow-none focus-visible:ring-0"
+                      />
+                      <div className="px-3 py-2 text-sm text-muted-foreground border-t">
+                        @reference your context
+                      </div>
+                    </div>
                   </div>
                   <Button
                     size="lg"
