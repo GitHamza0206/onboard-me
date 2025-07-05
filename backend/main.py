@@ -27,7 +27,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     # This is the origin where our React frontend is running.
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5174" , "http://localhost:5173"],
     # This allows the browser to send cookies, which is essential for session management.
     allow_credentials=True,
     # We allow all standard HTTP methods (GET, POST, etc.).

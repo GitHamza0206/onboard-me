@@ -2,32 +2,71 @@
 "use client";
 
 import { useState } from "react";
-import { Book, FileText, Map } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useNavigate } from "react-router-dom";
-
-type FormatOption = "Course" | "Guide" | "Roadmap";
+import {
+  ErrorPayload,
+  streamAgentResponse,
+  StreamCallbacks,
+  UpdatePayload,
+  ValuesPayload,
+} from "@/app/api/agent";
 
 export function CreatePage() {
   const [topic, setTopic] = useState("");
-  const [format, setFormat] = useState<FormatOption>("Course");
   const [wantsBetterCourse, setWantsBetterCourse] = useState(false);
   const navigate = useNavigate();
 
   const handleGenerate = () => {
-    console.log({ topic, format, wantsBetterCourse });
-    if (topic.trim()) {
-        navigate(`/generation/${encodeURIComponent(topic.trim())}`);
-    } else {
-        console.error("Topic cannot be empty");
+    const trimmedTopic = topic.trim();
+    if (!trimmedTopic) {
+      console.error("Topic cannot be empty");
+      return;
     }
+
+    /**
+     * These are the callback functions that will handle the data
+     * as it streams from the backend.
+     *
+     * For now, we are simply logging the events to the console.
+     * In a later step, we can use this data to update the UI in real-time.
+     */
+    const callbacks: StreamCallbacks = {
+      onMessage: (token: string) => {
+        console.log("SSE Message:", token);
+      },
+      onUpdate: (update: UpdatePayload) => {
+        console.log("SSE Update:", update);
+      },
+      onValues: (values: ValuesPayload) => {
+        console.log("SSE Values:", values);
+      },
+      onError: (error: ErrorPayload) => {
+        console.error("SSE Error:", error);
+      },
+      onClose: () => {
+        console.log("SSE Stream closed.");
+        // Once the stream is finished, we navigate to the generation page.
+        // This page would presumably show the final generated course.
+        //navigate(`/generation/${encodeURIComponent(trimmedTopic)}`);
+      },
+    };
+
+    console.log(`Requesting stream for topic: ${trimmedTopic}`);
+    // We call the stream function. Note that this is an async function
+    // that we don't await here. It runs in the background, and our
+    // callbacks will handle the events as they arrive.
+    streamAgentResponse(trimmedTopic, callbacks);
+
+    // The navigation now happens in the `onClose` callback,
+    // once the stream has finished. If we were to navigate immediately,
+    // this component would unmount and the stream would be cancelled.
   };
 
   return (
