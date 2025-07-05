@@ -8,7 +8,10 @@ from langchain_core.messages import HumanMessage
 
 from src.features.creator_agent.service.graph import graph
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/agent",
+    tags=["Agent"]
+)
 
 
 class ChatRequest(BaseModel):
