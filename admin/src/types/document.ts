@@ -14,19 +14,23 @@ export interface Metadata {
 }
 
 export interface DocumentChunk {
-  id: string;
+  id: number; 
   page_content: string;
   metadata: Partial<Metadata>;
 }
 
-export interface SimbaDoc {
-  id: string;
-  documents: DocumentChunk[];
-  metadata: Metadata;
-}
 
 export interface Folder {
   id: string;
   name: string;
   parentId: string | null;
+}
+
+
+export interface SimbaDoc {
+    id: number;
+    title: string;
+    contents: string;
+    profile_id: string;
+    created_at: string; 
 }
