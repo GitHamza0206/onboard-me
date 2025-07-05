@@ -1,6 +1,10 @@
 // app/auth/authContext.tsx
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  fetchUserProfile as fetchUserProfileApi,
+  signoutUser,
+} from "@/api/auth";
 
 // L'interface doit correspondre à la réponse de votre route /auth/me
 interface UserProfile {
