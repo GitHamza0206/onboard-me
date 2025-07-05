@@ -61,8 +61,8 @@ async def signup(credentials: UserCredentials, client: SimbaClient = Depends(get
     """
     try:
         # The signup method from the Simba SDK handles the call to the authentication service.
-        client.auth.signup(email=credentials.email, password=credentials.password)
-        return {"message": "Signup successful"}
+        response = client.auth.signup(email=credentials.email, password=credentials.password)
+        return response
     except Exception as e:
         # If anything goes wrong (e.g., user already exists), we catch the exception
         # and return an HTTP 400 error with the details.
@@ -79,9 +79,8 @@ async def signin(credentials: UserCredentials, response: Response, client: Simba
     Simba client's session and attaches it to the HTTP response sent to the browser.
     """
     try:
-        client.auth.signin(email=credentials.email, password=credentials.password)
-        
-        return {"message": "Signin successful"}
+        response = client.auth.signin(email=credentials.email, password=credentials.password)
+        return response
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Sign-in failed: {e}")
 

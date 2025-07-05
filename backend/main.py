@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth
+from routes import auth, agent
 from dotenv import load_dotenv
+import uvicorn
 
 # Load environment variables from a .env file at the project root.
 # This line is crucial for loading your SIMBA_API_URL and SIMBA_API_KEY
@@ -41,6 +42,7 @@ app.add_middleware(
 # will be at "/auth/signin".
 # The `tags` parameter helps to group the routes in the auto-generated API docs.
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(agent.router, prefix="/agent", tags=["Agent"])
 
 @app.get("/")
 def read_root():
@@ -48,3 +50,12 @@ def read_root():
     A simple root endpoint to confirm that the server is running.
     """
     return {"message": "Welcome to the Onboard-me API!"} 
+
+
+if __name__ == "__main__":
+    # When using reload=True, uvicorn needs the application as an import string
+    # rather than the app object directly. This allows uvicorn to properly
+    # reload the application when files change during development.
+    # The format is "module_name:variable_name" where module_name is the file
+    # (without .py extension) and variable_name is the FastAPI app instance.
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

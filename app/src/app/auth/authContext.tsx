@@ -1,6 +1,10 @@
 // 📄 front/src/app/auth/authContext.tsx
 import { createContext, useContext, useEffect, useState, useCallback } from "react"; // Ajouter useCallback
 import { useNavigate } from "react-router-dom";
+import {
+  fetchUserProfile as fetchUserProfileApi,
+  signoutUser,
+} from "@/api/auth";
 
 // Interface pour décrire la structure de l'objet utilisateur (basée sur UserInDB du backend)
 interface UserProfile {
@@ -30,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
   const [token, setToken] = useState<string | null>(localStorage.getItem("token")); // Gérer le token séparément
   const [loading, setLoading] = useState<boolean>(true); // Initialiser à true
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL;
   const extensionId = import.meta.env.VITE_CHROME_EXTENSION_ID || "hpabpplocejflbbidmillajegdfjinhd";
 
   // Fonction pour envoyer le token à l'extension Chrome
@@ -57,46 +60,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
 
   
 
-  // Fonction pour récupérer le profil utilisateur
-  const fetchUserProfile = useCallback(async (currentToken: string): Promise<UserProfile | null> => {
-    if (!currentToken) return null;
-    try {
-      const response = await fetch(`${apiUrl}/myprofile/`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${currentToken}`,
-        },
-      });
-      if (!response.ok) {
-        // Si le token est invalide (401 Unauthorized par exemple), déconnecter
-        if (response.status === 401) {
-            console.warn("Token invalide ou expiré lors de la récupération du profil.");
-            return null; // Indique que le profil n'a pas pu être récupéré
-        }
-        throw new Error(`Erreur ${response.status} lors de la récupération du profil`);
-      }
-      const profileData: UserProfile = await response.json();
-      return profileData;
-    } catch (error) {
-      console.error("Erreur fetchUserProfile:", error);
-      return null; // Retourne null en cas d'erreur réseau ou autre
-    }
-  }, [apiUrl]); // Dépendances de useCallback
-
   // Effet pour vérifier le token au montage et récupérer le profil
   useEffect(() => {
     const checkAuth = async () => {
       setLoading(true);
       const storedToken = localStorage.getItem("token");
       if (storedToken) {
-        const profile = await fetchUserProfile(storedToken);
-        if (profile) {
+        try {
+          const profile = await fetchUserProfileApi(storedToken);
           setUser(profile);
-          setToken(storedToken); // Mettre à jour l'état du token
-          sendTokenToExtension(storedToken); // Envoyer à l'extension si valide
-        } else {
-          // Si le profil n'a pas pu être récupéré (token invalide/expiré)
+          setToken(storedToken);
+          sendTokenToExtension(storedToken);
+        } catch (error) {
+          console.warn("Failed to fetch profile with stored token.", error);
           localStorage.removeItem("token");
           setUser(null);
           setToken(null);
@@ -108,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
       setLoading(false);
     };
     checkAuth();
-  }, [fetchUserProfile, sendTokenToExtension]); 
+  }, [sendTokenToExtension]); 
 
 
   
@@ -117,30 +93,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { // T
       localStorage.setItem("token", newToken);
       setToken(newToken);
 
-      const profile = await fetchUserProfile(newToken);
-
-      if (profile) {
-          setUser(profile);
-          sendTokenToExtension(newToken);
-          navigate("/dashboard");
-      } else {
-          console.error("Impossible de récupérer le profil après la connexion.");
+      try {
+        const profile = await fetchUserProfileApi(newToken);
+        setUser(profile);
+        sendTokenToExtension(newToken);
+        navigate("/dashboard");
+      } catch (error) {
+          console.error("Impossible de récupérer le profil après la connexion.", error);
           localStorage.removeItem("token");
           setUser(null);
           setToken(null);
       }
       setLoading(false);
-  }, [fetchUserProfile, navigate, sendTokenToExtension]);
+  }, [navigate, sendTokenToExtension]);
 
   // Fonction de déconnexion
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setUser(null);
-    setToken(null); // Vider l'état du token
-    navigate("/auth"); // Rediriger vers la page de connexion
-    setLoading(false); // Assurer que loading est false après logout
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]); // sendTokenToExtension retiré si non utilisé pour le logout
+  const logout = useCallback(async () => {
+    try {
+      await signoutUser();
+    } catch (error) {
+      console.error("Signout failed on the server, clearing local session.", error);
+    } finally {
+      localStorage.removeItem("token");
+      setUser(null);
+      setToken(null);
+      sendTokenToExtension(null);
+      navigate("/auth", { replace: true });
+    }
+  }, [navigate, sendTokenToExtension]);
 
 
   // Fournir la valeur au contexte

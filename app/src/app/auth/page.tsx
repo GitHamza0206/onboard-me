@@ -13,43 +13,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "../auth/authContext";
 import { Link } from "react-router-dom"; // <-- Importer Link
+import { loginUser } from "@/api/auth";
 
 export function AuthPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null); // Type explicite pour error
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => { // Type explicite pour event
     event.preventDefault();
     setError(null);
 
-    const formData = new URLSearchParams();
-    formData.append("grant_type", "password");
-    formData.append("username", email);
-    formData.append("password", password);
-    formData.append("scope", "");
-    formData.append("client_id", "string");
-    formData.append("client_secret", "string");
-
     try {
-      const response = await fetch(`${apiUrl}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Accept": "application/json",
-        },
-        body: formData.toString(),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-         // Utiliser data.detail s'il existe, sinon un message générique
-        throw new Error(data.detail || "Login failed");
-      }
-
+      const data = await loginUser({ email, password });
       login(data.access_token);
     } catch (err: any) { // Type explicite pour err
       setError(err.message);

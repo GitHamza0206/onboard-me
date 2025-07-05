@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
+import { registerUser } from "@/api/auth";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -24,7 +25,6 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,9 +36,6 @@ export function RegisterPage() {
       return;
     }
 
-    // --- Endpoint mis à jour ---
-    const registrationEndpoint = `${apiUrl}/register`; // URL correcte de l'API
-
     // --- Corps de la requête mis à jour ---
     const requestBody = {
       first_name: firstName, // Correspond au schéma UserCreate
@@ -48,22 +45,7 @@ export function RegisterPage() {
     };
 
     try {
-      const response = await fetch(registrationEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-         // Gestion d'erreur compatible avec FastAPI (utilise le champ 'detail')
-        const errorMessage = data?.detail || "Registration failed. Please try again.";
-        throw new Error(errorMessage);
-      }
+      await registerUser(requestBody);
 
       setSuccessMessage("Registration successful! Redirecting to login...");
       setTimeout(() => {
