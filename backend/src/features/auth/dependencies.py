@@ -11,6 +11,9 @@ scheme = HTTPBearer()
 
 # Récupérez la clé secrète JWT de votre projet Supabase (dans les paramètres API)
 SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
+print("--- JWT SECRET LOADED ---")
+print(SUPABASE_JWT_SECRET)
+print("-------------------------")
 
 # Modifiez la dépendance pour qu'elle utilise le nouveau "scheme"
 def get_current_user(credentials: str = Depends(scheme)):
@@ -22,7 +25,7 @@ def get_current_user(credentials: str = Depends(scheme)):
     try:
         # Décoder le token avec la clé secrète pour vérifier son authenticité
         payload = jwt.decode(
-            token, SUPABASE_JWT_SECRET, algorithms=["HS256"]
+            token, SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
         )
         
         # Le payload contient les infos de l'utilisateur, comme son ID (sub)
