@@ -44,6 +44,7 @@
     "@tiptap/extension-table-row": "^2.24.2",
     "@tiptap/extension-text-align": "^2.24.2",
     "@tiptap/extension-text-style": "^2.24.2",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@tiptap/extension-underline": "^2.24.2",
     "@tiptap/react": "^2.24.2",
     "@tiptap/starter-kit": "^2.24.2",

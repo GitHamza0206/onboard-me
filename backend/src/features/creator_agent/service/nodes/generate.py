@@ -3,6 +3,7 @@ from src.features.creator_agent.service.state import State
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from shared.llm import llm
+import re 
 
 generate_prompt = ChatPromptTemplate.from_template(
     """You are the Creator Agent, an expert instructional designer and knowledge architect. Your primary role is to help administrators transform raw, unstructured company content (like documents, videos, and notes) into clear, structured, and effective learning courses for employees.
@@ -36,8 +37,28 @@ here's the full conversation history:
 
 chain = generate_prompt | llm
 
+def get_confidence_score(text: str) -> int:
+    
+    # Expression régulière plus robuste
+    match = re.search(r"(\d{1,2})/10", text)
+    
+    if match:
+        # match.group(1) contient le premier groupe capturé par les parenthèses, c'est-à-dire le nombre.
+        score = int(match.group(1))
+        print(f"✅ Score trouvé : {score}")
+        return score
+    else:
+        print("❌ Score non trouvé dans le texte.")
+        return 0
+
 def generate(state: State) -> State:
     query = state.messages[-1].content
     messages = state.messages
     response = chain.invoke({"query": query, "messages": messages})
-    return {"messages": messages + [AIMessage(content=response.content)]} 
+    confidence = get_confidence_score(response.content)
+    print(f"Generated response: {response.content}")
+    return {
+        "messages": [AIMessage(content=response.content)],
+        # "messages": messages + [AIMessage(content=response.content)],
+        "confidence_score": confidence
+    }

@@ -1,10 +1,10 @@
 // src/app/create/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react"; // Ajout de useRef
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Zap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -35,51 +35,65 @@ export function CreatePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [confidenceScore, setConfidenceScore] = useState(0);
+  const [showGenerateButton, setShowGenerateButton] = useState(false);
+  
+  // Ref pour le conteneur des messages afin de scroller automatiquement
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    console.log("Confidence score updated:", confidenceScore);
+    if (confidenceScore >= 8 && !isStreaming) {
+      setShowGenerateButton(true);
+    } else {
+      setShowGenerateButton(false);
+    }
+  }, [confidenceScore, isStreaming]);
+
+  // Effet pour scroller vers le bas quand un nouveau message arrive
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const sendMessage = (text: string) => {
     if (!text.trim() || isStreaming) return;
 
     const userMessage: Message = { id: uuidv4(), sender: "user", text };
-    setMessages((prev) => [...prev, userMessage]);
+    const aiMessageId = uuidv4();
+    const aiPlaceholder: Message = { id: aiMessageId, sender: "ai", text: "" };
+
+    // Mise à jour de l'état en une seule fois pour éviter les erreurs
+    setMessages((prev) => [...prev, userMessage, aiPlaceholder]);
+    
     setNewMessage("");
     setIsStreaming(true);
-
-    const aiMessageId = uuidv4();
-    // Add a placeholder for the AI response
-    setMessages((prev) => [...prev, { id: aiMessageId, sender: "ai", text: "" }]);
+    setShowGenerateButton(false);
 
     const callbacks: StreamCallbacks = {
       onMessage: (token: string) => {
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.id === aiMessageId) {
-            lastMessage.text += token;
-          }
-          return newMessages;
-        });
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId ? { ...msg, text: msg.text + token } : msg
+          )
+        );
       },
-      onUpdate: (update: UpdatePayload) => {
-        const serverMessages: Message[] = update.messages
-          .filter(m => m.type === 'human' || m.type === 'ai')
-          .map((msg, index) => ({
-            id: msg.id || `${aiMessageId}-chunk-${index}`,
-            sender: msg.type === "human" ? "user" : "ai",
-            text: msg.content,
-          }));
-
-        // Replace all but the last message, which is being actively streamed
-        setMessages(serverMessages);
-      },
-      onValues: (values: ValuesPayload) => {
-        console.log("SSE Values:", values);
+      onValues: (values: ValuesPayload & { thread_id?: string }) => {
+        if (typeof values.confidence_score === 'number') {
+          setConfidenceScore(values.confidence_score);
+        }
+        if (values.thread_id && !threadId) {
+          setThreadId(values.thread_id);
+        }
       },
       onError: (error: ErrorPayload) => {
         console.error("SSE Error:", error);
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === aiMessageId
-              ? { ...msg, text: `Error: ${error.message}` }
+              ? { ...msg, text: `Error: ${"message" in error ? error.message : "An unknown error occurred"}` }
               : msg
           )
         );
@@ -91,16 +105,12 @@ export function CreatePage() {
       },
     };
 
-    console.log(`Requesting stream for: ${text}`);
-    streamAgentResponse(text, callbacks);
+    streamAgentResponse(text, threadId, callbacks);
   };
 
   const handleGenerate = () => {
     const trimmedTopic = topic.trim();
-    if (!trimmedTopic) {
-      console.error("Topic cannot be empty");
-      return;
-    }
+    if (!trimmedTopic) return;
     setIsChatVisible(true);
     sendMessage(trimmedTopic);
     setTopic("");
@@ -109,6 +119,11 @@ export function CreatePage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(newMessage);
+  };
+
+  const handleProceedToGeneration = () => {
+    sendMessage("PROCEED_TO_GENERATION");
+    setShowGenerateButton(false);
   };
 
   return (
@@ -130,7 +145,7 @@ export function CreatePage() {
                     Create Your Custom Onboarding
                   </h1>
                   <p className="text-muted-foreground mt-2">
-                    Enter a topic below to generate a onboarding on it
+                    Enter a topic below to generate an onboarding on it
                   </p>
                 </div>
                 <div className="space-y-6">
@@ -165,7 +180,7 @@ export function CreatePage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col flex-1 w-full max-w-4xl mx-auto overflow-hidden"
             >
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {messages.map((message) => (
                   <motion.div
                     key={message.id}
@@ -186,6 +201,7 @@ export function CreatePage() {
                     <div
                       className={cn(
                         "rounded-lg px-4 py-3 max-w-lg",
+                        "prose prose-sm prose-slate dark:prose-invert",
                         message.sender === "user"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
@@ -206,6 +222,17 @@ export function CreatePage() {
                 ))}
               </div>
               <div className="p-4 bg-background border-t">
+                {showGenerateButton && (
+                  <div className="mb-4">
+                    <Button
+                      className="w-full bg-green-500 hover:bg-green-600 text-white"
+                      onClick={handleProceedToGeneration}
+                    >
+                      <Zap className="mr-2 h-4 w-4" />
+                      Generate Course Structure (Confidence: {confidenceScore}/10)
+                    </Button>
+                  </div>
+                )}
                 <form
                   onSubmit={handleFormSubmit}
                   className="flex items-center gap-4"

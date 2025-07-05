@@ -59,11 +59,11 @@ export interface StreamCallbacks {
  * @param topic - The topic or message to send to the agent.
  * @param callbacks - An object containing callback functions to handle stream events.
  */
-export const streamAgentResponse = async (topic: string, callbacks: StreamCallbacks) => {
-  const { onMessage, onUpdate, onValues, onError, onClose } = callbacks;
+export const streamAgentResponse = async (text: string, threadId: string | null, callbacks: StreamCallbacks) => {
+  const { onMessage, onValues, onError, onClose } = callbacks;
 
   try {
-    await fetchEventSource(`${API_URL}/runs/stream`, {
+    await fetchEventSource(`${import.meta.env.VITE_API_URL}/agent/runs/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,100 +73,69 @@ export const streamAgentResponse = async (topic: string, callbacks: StreamCallba
           messages: [
             {
               type: "human",
-              content: `${topic}`,
+              content: text,
             },
           ],
         },
-        // We request specific stream modes to get different types of data.
+        config: {
+          configurable: {
+            thread_id: threadId,
+          },
+        },
         stream_mode: ["messages", "updates", "values"],
       }),
       
-      /**
-       * `onopen` is called when a connection is established.
-       * It must return a Promise. Here, we're just logging that the connection is open.
-       */
+      // The rest of the function remains the same
       async onopen(response) {
         if (response.ok) {
-          console.log("Connection opened for SSE.");
-          return; // Everything is good.
+          return;
         } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           const error = await response.json();
-          console.error("Client-side error:", error);
           throw new Error(JSON.stringify(error));
         } else {
-          console.error("Server-side error:", response.statusText);
           throw new Error(response.statusText);
         }
       },
 
-      /**
-       * `onmessage` is called for each event received from the server.
-       */
       onmessage(event) {
-        // The server sends a '[DONE]' message to signal the end of the stream.
         if (event.data === "[DONE]") {
-          console.log("Stream finished.");
-          if (onClose) {
-            onClose();
-          }
+          onClose?.();
           return;
         }
-
         try {
           const [eventType, payload] = JSON.parse(event.data);
-
-          // We switch on the event type to call the appropriate callback.
           switch (eventType) {
             case "messages":
-              if (onMessage) onMessage(payload);
-              console.log("messages", payload);
-              break;
-            case "updates":
-              if (onUpdate) onUpdate(payload);
+              onMessage?.(payload);
               break;
             case "values":
-                if (onValues) onValues(payload);
-                break;
+              onValues?.(payload);
+              break;
+            // Removed onUpdate as it's not used
             case "error":
-              console.error("Stream error event:", payload);
-              if (onError) onError(payload as ErrorPayload);
+              onError?.(payload as ErrorPayload);
               break;
             default:
-              // console.warn("Unhandled SSE event type:", eventType);
               break;
           }
         } catch (e) {
           console.error("Failed to parse SSE message data:", event.data, e);
-          if (onError) {
-            onError(new Error("Failed to parse message from server."));
-          }
+          onError?.(new Error("Failed to parse message from server."));
         }
       },
 
-      /**
-       * `onclose` is called when the connection is closed.
-       */
       onclose() {
         console.log("Connection closed by server.");
       },
 
-      /**
-       * `onerror` is called when a network error occurs.
-       */
       onerror(err) {
         console.error("SSE fetch error:", err);
-        if (onError) {
-          onError(err);
-        }
-        // The library will automatically retry, so we throw the error
-        // to stop it from retrying on fatal errors.
+        onError?.(err);
         throw err;
       },
     });
   } catch (err) {
     console.error("Failed to start stream:", err);
-    if (onError) {
-      onError(err as Error);
-    }
+    onError?.(err as Error);
   }
-}; 
+};

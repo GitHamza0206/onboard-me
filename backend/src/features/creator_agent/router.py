@@ -72,7 +72,8 @@ class StreamEventProcessor:
         """Process updates mode events - node state changes and tool calls."""
         result = ""
         for node_name, state_update in chunk.items():
-            if "messages" in state_update:
+            # Traiter et envoyer les messages comme avant
+            if "messages" in state_update and state_update["messages"]:
                 serializable_messages = self._serialize_messages(state_update["messages"])
                 update_info = {
                     "node": node_name,
@@ -80,6 +81,13 @@ class StreamEventProcessor:
                     "thread_id": self.thread_id
                 }
                 result += self._format_sse_data('updates', update_info)
+            
+            # CORRECTION : Traiter et envoyer les autres valeurs (comme confidence_score)
+            other_values = {k: v for k, v in state_update.items() if k != "messages" and v is not None}
+            if other_values:
+                # On réutilise le canal 'values' pour envoyer ces données au frontend
+                result += self._format_sse_data('values', other_values)
+                
         return result
     
     def _process_values_mode(self, chunk) -> str:
