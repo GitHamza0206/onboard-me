@@ -19,6 +19,11 @@ def get_llm(model_provider_and_name, disable_streaming=False):
     else:
         raise ValueError(f"Model {model_name} not supported")
     
-llm_model = "mistral/mistral-small-latest"
+
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "mistral")
+MODEL_NAME = os.getenv("MODEL_NAME", "mistral-small-latest")
+
+llm_model = f"{MODEL_PROVIDER}/{MODEL_NAME}"
+print(f"Using model: {llm_model}")
 llm = get_llm(llm_model, disable_streaming=False)
 llm_not_streaming = get_llm(llm_model, disable_streaming=True)
