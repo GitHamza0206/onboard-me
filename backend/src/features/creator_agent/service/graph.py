@@ -1,9 +1,9 @@
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
-from services.creator_agent.state import State
+from src.features.creator_agent.service.state import State
 # ===========================================
 # Import nodes
-from services.creator_agent.nodes.generate import generate
+from src.features.creator_agent.service.nodes.generate import generate
 # ===========================================
 
 workflow = StateGraph(State)
