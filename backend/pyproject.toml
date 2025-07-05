@@ -17,4 +17,6 @@ dependencies = [
     "pydantic[email]",
     "PyJWT[crypto]",
     "langchain-mistralai>=0.2.10",
+    "unstructured[pdf,pptx]",
+    "pytesseract"
 ]
