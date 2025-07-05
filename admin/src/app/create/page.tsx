@@ -22,6 +22,9 @@ import {
   ValuesPayload,
 } from "@/app/api/agent";
 import { cn } from "@/lib/utils";
+import { useAuth } from "../auth/authContext";
+import { useNavigate } from "react-router-dom";
+
 
 interface Message {
   id: string;
@@ -38,7 +41,10 @@ export function CreatePage() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [confidenceScore, setConfidenceScore] = useState(0);
   const [showGenerateButton, setShowGenerateButton] = useState(false);
-  
+  const { token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const navigate = useNavigate();
+
   // Ref pour le conteneur des messages afin de scroller automatiquement
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +72,7 @@ export function CreatePage() {
     const aiPlaceholder: Message = { id: aiMessageId, sender: "ai", text: "" };
 
     setMessages((prev) => [...prev, userMessage, aiPlaceholder]);
-    
+
     setNewMessage("");
     setIsStreaming(true);
     setShowGenerateButton(false);
@@ -77,7 +83,7 @@ export function CreatePage() {
         setMessages((prevMessages) =>
           prevMessages.map((msg) => {
             if (msg.id !== aiMessageId) return msg;
-            
+
             // If the incoming token contains the current text as a prefix, replace instead of append
             const shouldReplace = token.startsWith(msg.text);
             const newText = shouldReplace ? token : msg.text + token;
@@ -88,6 +94,7 @@ export function CreatePage() {
       onValues: (values: ValuesPayload & { thread_id?: string }) => {
         if (typeof values.confidence_score === 'number') {
           setConfidenceScore(values.confidence_score);
+          console.log("Confidence score received:", values.confidence_score);
         }
         if (values.thread_id && !threadId) {
           setThreadId(values.thread_id);
@@ -126,9 +133,50 @@ export function CreatePage() {
     sendMessage(newMessage);
   };
 
-  const handleProceedToGeneration = () => {
-    sendMessage("PROCEED_TO_GENERATION");
-    setShowGenerateButton(false);
+
+  async function fetchStructure(threadId: string) {
+    const res = await fetch(`${apiUrl}/agent/structure`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ thread_id: threadId, prompt: "PROCEED_TO_GENERATION" })
+    });
+    if (!res.ok) throw new Error("Generation failed");
+    return res.json();           // {title:"...", modules:[...]}
+  }
+
+  async function saveFormation(structure: any) {
+    const res = await fetch(`${apiUrl}/formations/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(structure)
+    });
+    if (!res.ok) throw new Error("DB insert failed");
+    return res.json();           // { id: …, nom: … }
+  }
+
+  const handleProceedToGeneration = async () => {
+    try {
+      setIsStreaming(true);                         // simple spinner
+      const structure = await fetchStructure(threadId!);
+      const created = await saveFormation(structure);
+      navigate(`/generation/${created.id}`);
+
+
+      console.log({
+        title: "Formation créée",
+        description: `ID #${created.id} – ${created.nom}`
+      });
+    } catch (e: any) {
+      console.log({ variant: "destructive", title: "Erreur", description: e.message });
+    } finally {
+      setIsStreaming(false);
+    }
   };
 
   return (

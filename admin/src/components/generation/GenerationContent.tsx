@@ -1,7 +1,8 @@
 // src/components/generation/GenerationContent.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/auth/authContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,35 +17,6 @@ import { CSS } from "@dnd-kit/utilities";
 type Lesson = { id: number | string; title: string; description: string };
 type Module = { id: number | string; title: string; lessons: Lesson[] };
 
-const initialCourseData: Module[] = [
-  {
-    id: 1,
-    title: "Module 1: Advanced State-Space Modeling for MPC",
-    lessons: [
-      { id: 101, title: "Linear Time-Varying (LTV) System Representation", description: "In-depth analysis of LTV systems and their state-space representation." },
-      { id: 102, title: "Discrete-Time System Identification Techniques", description: "Methods for identifying system models from discrete-time data." },
-      { id: 103, title: "State Estimation with Kalman Filtering for MPC", description: "Using Kalman filters to estimate system states for predictive control." },
-      { id: 104, title: "Handling Constraints in State-Space Models", description: "Techniques for incorporating input, output, and state constraints." },
-      { id: 105, title: "Case Study: Modeling a Chemical Reactor for MPC", description: "A practical application of modeling techniques on a chemical reactor." },
-    ],
-  },
-  {
-    id: 2,
-    title: "Module 2: MPC Formulation and Optimization",
-    lessons: [
-       { id: 201, title: "Quadratic Programming (QP) for MPC", description: "Formulating the MPC problem as a QP optimization." },
-       { id: 202, title: "Constraint Handling Techniques in MPC Optimization", description: "Exploring hard and soft constraint handling in the optimization problem." },
-       { id: 203, title: "Weighting Matrices Selection and Tuning", description: "Strategies for selecting and tuning the Q and R weighting matrices." },
-       { id: 204, title: "Multi-Objective MPC Formulation", description: "Balancing multiple control objectives within the MPC framework." },
-       { id: 205, title: "Practical Exercise: Implementing a QP Solver for MPC", description: "A hands-on exercise to code a simple QP solver for an MPC problem." },
-    ],
-  },
-  {
-    id: 3,
-    title: "Module 3: Robust MPC Design",
-    lessons: [],
-  },
-];
 
 // --- Draggable Components ---
 
@@ -69,36 +41,79 @@ function SortableLessonItem({ lesson, index, moduleId, onEdit, onDelete }: { les
 }
 
 function SortableModule({ module, children, isAnyModuleDragging }: { module: Module, children: React.ReactNode[], isAnyModuleDragging: boolean }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: module.id });
-    const style = { 
-        transform: CSS.Transform.toString(transform), 
-        transition,
-        opacity: isDragging ? 0.8 : 1, // Optional: make the dragged item slightly transparent
-    };
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: module.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1, // Optional: make the dragged item slightly transparent
+  };
 
-    return (
-        <div ref={setNodeRef} style={style}>
-            <div className="group flex items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2 flex-grow">
-                    <div {...attributes} {...listeners} className="cursor-grab touch-none p-1">
-                        <GripVertical className="h-5 w-5 text-muted-foreground/60" />
-                    </div>
-                    {children[0]} {/* Title or Input */}
-                </div>
-                 {children[1]} {/* Edit/Delete Icons */}
-            </div>
-            {!isAnyModuleDragging && children.slice(2)} {/* Hide content if ANY module is being dragged */}
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="group flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2 flex-grow">
+          <div {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+            <GripVertical className="h-5 w-5 text-muted-foreground/60" />
+          </div>
+          {children[0]} {/* Title or Input */}
         </div>
-    )
+        {children[1]} {/* Edit/Delete Icons */}
+      </div>
+      {!isAnyModuleDragging && children.slice(2)} {/* Hide content if ANY module is being dragged */}
+    </div>
+  )
 }
 
-export function GenerationContent() {
-  const [course, setCourse] = useState<Module[]>(initialCourseData);
+export function GenerationContent({
+  courseId,
+  onTitle,
+}: {
+  courseId: string;
+  onTitle: (t: string) => void;
+}) {
+  const { token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const [course, setCourse] = useState<Module[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("Course Title");
   const [editingModuleId, setEditingModuleId] = useState<Module['id'] | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<Module['id'] | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | number | null>(null); // State to track the active dragged item
   const sensors = useSensors(useSensor(PointerSensor));
+
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch(`${apiUrl}/formations/${courseId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch formation");
+        const data = await res.json();
+
+        // mappe la réponse vers Module[]
+        const mapped: Module[] = data.modules.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          lessons: m.lessons.map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+          })),
+        }));
+        setCourse(mapped);
+        setTitle(data.title);
+        onTitle(data.title);        // maj header
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [courseId, token]);
+
+   if (loading) return <div className="p-8">Loading…</div>;
 
   // --- Handlers ---
   const handleDeleteModule = (moduleId: Module['id']) => setCourse(c => c.filter(m => m.id !== moduleId));
@@ -114,20 +129,20 @@ export function GenerationContent() {
     setEditingLesson({ id: Date.now().toString(), title: "", description: "" });
   };
   const handleOpenEditLessonModal = (moduleId: Module['id'], lesson: Lesson) => {
-      setCurrentModuleId(moduleId);
-      setEditingLesson(lesson);
+    setCurrentModuleId(moduleId);
+    setEditingLesson(lesson);
   };
   const handleSaveLesson = () => {
     if (!editingLesson || currentModuleId === null) return;
     setCourse(currentCourse => currentCourse.map(module => {
-        if (module.id === currentModuleId) {
-            const lessonExists = module.lessons.some(l => l.id === editingLesson.id);
-            const newLessons = lessonExists 
-                ? module.lessons.map(l => l.id === editingLesson.id ? editingLesson : l) 
-                : [...module.lessons, editingLesson];
-            return { ...module, lessons: newLessons };
-        }
-        return module;
+      if (module.id === currentModuleId) {
+        const lessonExists = module.lessons.some(l => l.id === editingLesson.id);
+        const newLessons = lessonExists
+          ? module.lessons.map(l => l.id === editingLesson.id ? editingLesson : l)
+          : [...module.lessons, editingLesson];
+        return { ...module, lessons: newLessons };
+      }
+      return module;
     }));
     setEditingLesson(null);
     setCurrentModuleId(null);
@@ -136,7 +151,7 @@ export function GenerationContent() {
     const newModule: Module = { id: Date.now(), title: "New Module (click to edit)", lessons: [] };
     setCourse(currentCourse => [...currentCourse, newModule]);
   };
-  
+
   // --- Drag and Drop Handlers ---
   function handleDragStart(event: DragStartEvent) {
     setActiveDragId(event.active.id);
@@ -150,20 +165,20 @@ export function GenerationContent() {
     const isModuleDrag = course.some(c => c.id === active.id);
 
     if (isModuleDrag) {
-        setCourse(items => {
-            const oldIndex = items.findIndex(item => item.id === active.id);
-            const newIndex = items.findIndex(item => item.id === over.id);
-            return arrayMove(items, oldIndex, newIndex);
-        });
+      setCourse(items => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
     } else {
-        setCourse(currentCourse => {
-            const moduleContainingLesson = currentCourse.find(m => m.lessons.some(l => l.id === active.id));
-            if (!moduleContainingLesson) return currentCourse;
-            const oldIndex = moduleContainingLesson.lessons.findIndex(l => l.id === active.id);
-            const newIndex = moduleContainingLesson.lessons.findIndex(l => l.id === over.id);
-            const reorderedLessons = arrayMove(moduleContainingLesson.lessons, oldIndex, newIndex);
-            return currentCourse.map(m => m.id === moduleContainingLesson.id ? { ...m, lessons: reorderedLessons } : m);
-        });
+      setCourse(currentCourse => {
+        const moduleContainingLesson = currentCourse.find(m => m.lessons.some(l => l.id === active.id));
+        if (!moduleContainingLesson) return currentCourse;
+        const oldIndex = moduleContainingLesson.lessons.findIndex(l => l.id === active.id);
+        const newIndex = moduleContainingLesson.lessons.findIndex(l => l.id === over.id);
+        const reorderedLessons = arrayMove(moduleContainingLesson.lessons, oldIndex, newIndex);
+        return currentCourse.map(m => m.id === moduleContainingLesson.id ? { ...m, lessons: reorderedLessons } : m);
+      });
     }
   }
 
@@ -172,59 +187,59 @@ export function GenerationContent() {
 
   return (
     <TooltipProvider delayDuration={200}>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
-            <main className="flex-1 overflow-y-auto">
-                <ScrollArea className="h-full">
-                <div className="p-8 max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold">Mastering Model Predictive Control (MPC)</h2>
-                        <div className="flex items-center gap-2"><Button variant="outline"><List className="mr-2 h-4 w-4" />Outline</Button><Button variant="ghost" className="text-muted-foreground"><Map className="mr-2 h-4 w-4" />Map</Button></div>
-                    </div>
-                    <div className="space-y-10">
-                        <SortableContext items={course.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                            {course.map((section) => (
-                                <SortableModule key={section.id} module={section} isAnyModuleDragging={isDraggingModule}>
-                                    {/* Child 0: Title */}
-                                    {editingModuleId === section.id ? (
-                                        <Input autoFocus defaultValue={section.title} onBlur={(e) => handleUpdateModuleTitle(section.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateModuleTitle(section.id, e.currentTarget.value) }} className="text-xl font-semibold"/>
-                                    ) : ( <h3 className="text-xl font-semibold flex-grow">{section.title}</h3> )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
+        <main className="flex-1 overflow-y-auto">
+          <ScrollArea className="h-full">
+            <div className="p-8 max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">{title}</h2>
+                <div className="flex items-center gap-2"><Button variant="outline"><List className="mr-2 h-4 w-4" />Outline</Button><Button variant="ghost" className="text-muted-foreground"><Map className="mr-2 h-4 w-4" />Map</Button></div>
+              </div>
+              <div className="space-y-10">
+                <SortableContext items={course.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                  {course.map((section) => (
+                    <SortableModule key={section.id} module={section} isAnyModuleDragging={isDraggingModule}>
+                      {/* Child 0: Title */}
+                      {editingModuleId === section.id ? (
+                        <Input autoFocus defaultValue={section.title} onBlur={(e) => handleUpdateModuleTitle(section.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateModuleTitle(section.id, e.currentTarget.value) }} className="text-xl font-semibold" />
+                      ) : (<h3 className="text-xl font-semibold flex-grow">{section.title}</h3>)}
 
-                                    {/* Child 1: Edit/Delete Icons */}
-                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Button variant="ghost" size="icon" onClick={() => setEditingModuleId(section.id)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button><Button variant="ghost" size="icon" onClick={() => handleDeleteModule(section.id)}><X className="h-4 w-4 text-muted-foreground" /></Button></div>
-                                    
-                                    {/* Child 2: Lesson List */}
-                                    <SortableContext items={section.lessons.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                                        <ul className="space-y-1 mt-4">
-                                            {section.lessons.map((lesson, lessonIndex) => (
-                                                <SortableLessonItem key={lesson.id} lesson={lesson} index={lessonIndex} moduleId={section.id} onEdit={handleOpenEditLessonModal} onDelete={handleDeleteLesson} />
-                                            ))}
-                                        </ul>
-                                    </SortableContext>
-                                
-                                    {/* Child 3: Add Lesson Button */}
-                                    <div onClick={() => handleOpenNewLessonModal(section.id)} className="mt-2 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
-                                        <Plus className="h-4 w-4" />
-                                        <span>Add a lesson</span>
-                                    </div>
-                                </SortableModule>
-                            ))}
-                        </SortableContext>
-                        <div onClick={handleAddNewModule} className="mt-10 flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
-                            <Plus className="h-4 w-4" />
-                            <span className="font-semibold">Add a module</span>
-                        </div>
-                    </div>
+                      {/* Child 1: Edit/Delete Icons */}
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Button variant="ghost" size="icon" onClick={() => setEditingModuleId(section.id)}><Pencil className="h-4 w-4 text-muted-foreground" /></Button><Button variant="ghost" size="icon" onClick={() => handleDeleteModule(section.id)}><X className="h-4 w-4 text-muted-foreground" /></Button></div>
+
+                      {/* Child 2: Lesson List */}
+                      <SortableContext items={section.lessons.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                        <ul className="space-y-1 mt-4">
+                          {section.lessons.map((lesson, lessonIndex) => (
+                            <SortableLessonItem key={lesson.id} lesson={lesson} index={lessonIndex} moduleId={section.id} onEdit={handleOpenEditLessonModal} onDelete={handleDeleteLesson} />
+                          ))}
+                        </ul>
+                      </SortableContext>
+
+                      {/* Child 3: Add Lesson Button */}
+                      <div onClick={() => handleOpenNewLessonModal(section.id)} className="mt-2 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                        <span>Add a lesson</span>
+                      </div>
+                    </SortableModule>
+                  ))}
+                </SortableContext>
+                <div onClick={handleAddNewModule} className="mt-10 flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                  <Plus className="h-4 w-4" />
+                  <span className="font-semibold">Add a module</span>
                 </div>
-                </ScrollArea>
-            </main>
-        </DndContext>
+              </div>
+            </div>
+          </ScrollArea>
+        </main>
+      </DndContext>
       {editingLesson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-background rounded-lg shadow-xl w-full max-w-lg p-6 space-y-4">
-              <h2 className="text-2xl font-bold">Lesson Details</h2>
-              <div><label htmlFor="lessonTitle" className="text-sm font-medium text-muted-foreground">Title</label><Input id="lessonTitle" value={editingLesson.title} onChange={(e) => setEditingLesson({...editingLesson, title: e.target.value})} className="mt-1"/></div>
-              <div><label htmlFor="lessonDescription" className="text-sm font-medium text-muted-foreground">Description</label><Textarea id="lessonDescription" value={editingLesson.description} onChange={(e) => setEditingLesson({...editingLesson, description: e.target.value})} className="mt-1" rows={5}/></div>
-              <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingLesson(null)}>Cancel</Button><Button onClick={handleSaveLesson}>Save</Button></div>
+            <h2 className="text-2xl font-bold">Lesson Details</h2>
+            <div><label htmlFor="lessonTitle" className="text-sm font-medium text-muted-foreground">Title</label><Input id="lessonTitle" value={editingLesson.title} onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })} className="mt-1" /></div>
+            <div><label htmlFor="lessonDescription" className="text-sm font-medium text-muted-foreground">Description</label><Textarea id="lessonDescription" value={editingLesson.description} onChange={(e) => setEditingLesson({ ...editingLesson, description: e.target.value })} className="mt-1" rows={5} /></div>
+            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingLesson(null)}>Cancel</Button><Button onClick={handleSaveLesson}>Save</Button></div>
           </div>
         </div>
       )}

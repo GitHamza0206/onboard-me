@@ -1,86 +1,137 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SimbaDoc } from '@/types/document';
 import { useToast } from "@/hooks/use-toast";
 
 // --- Données de démonstration ---
 const initialDocs: SimbaDoc[] = [
-  {
-    id: 'doc_1',
-    metadata: {
-      filename: 'Rapport Annuel 2023.pdf', type: 'application/pdf', uploadedAt: '2025-06-15T10:00:00Z',
-      enabled: true, parsing_status: 'SUCCESS', parser: 'docling',
-      summary: 'Ce rapport détaille les performances financières...', file_path: '/path/to/doc1.pdf'
-    },
-    documents: [{ id: 'chunk_1', page_content: 'Contenu du chunk 1...', metadata: {} }]
-  },
-  {
-    id: 'doc_2',
-    metadata: {
-      filename: 'Présentation Marketing.pptx', type: 'application/vnd.ms-powerpoint', uploadedAt: '2025-07-01T15:00:00Z',
-      enabled: false, parsing_status: 'PENDING', parser: 'docling', file_path: '/path/to/doc2.pptx'
-    },
-    documents: []
-  },
-  {
-    id: 'doc_3',
-    metadata: {
-      filename: 'Notes de réunion.docx', type: 'application/msword', uploadedAt: '2025-05-30T09:00:00Z',
-      enabled: true, parsing_status: '', parser: 'docling', file_path: '/path/to/doc3.docx'
-    },
-    documents: []
-  },
 ];
+import { useAuth } from '@/app/auth/authContext'; // Import useAuth to get the token
 
 export const useDocumentManagement = () => {
-  const [documents, setDocuments] = useState<SimbaDoc[]>(initialDocs);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+    const [documents, setDocuments] = useState<SimbaDoc[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+    const { token } = useAuth(); // Get the auth token
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  const fetchDocuments = useCallback(async () => {
-    setIsLoading(true);
-    console.log("Fetching documents...");
-    await new Promise(res => setTimeout(res, 500)); // Simule un appel réseau
-    setDocuments(initialDocs);
-    setIsLoading(false);
-    toast({ title: "Documents rafraîchis" });
-  }, [toast]);
+    // --- 1. Connect fetchDocuments to the backend ---
+    const fetchDocuments = useCallback(async () => {
+        if (!token) return;
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/documents/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error("Failed to fetch documents.");
+            const data: SimbaDoc[] = await response.json();
+            setDocuments(data);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Error", description: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [apiUrl, token, toast]);
 
-  const handleDocumentUpdate = useCallback((updatedDoc: SimbaDoc) => {
-    setDocuments(prevDocs => prevDocs.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc));
-  }, []);
+    // Fetch documents on initial load
+    useEffect(() => {
+        fetchDocuments();
+    }, [fetchDocuments]);
 
-  const handleDelete = useCallback((id: string) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer ce document ?`)) return;
-    setDocuments(prev => prev.filter(doc => doc.id !== id));
-    toast({ title: "Succès", description: "Document supprimé." });
-  }, [toast]);
+    // --- 2. Connect handleUpload to the backend ---
+    const handleUpload = useCallback(async (files: FileList) => {
+        if (!token) return;
 
-  const handleUpload = useCallback(async (files: FileList) => {
-    setIsLoading(true);
-    toast({ title: "Téléversement...", description: `${files.length} fichier(s) en cours de traitement.` });
-    
-    await new Promise(res => setTimeout(res, 1500));
+        setIsLoading(true);
+        toast({ title: "Uploading...", description: `Processing ${files.length} file(s).` });
 
-    const newDocs: SimbaDoc[] = Array.from(files).map((file, index) => ({
-      id: `new_doc_${Date.now() + index}`,
-      metadata: {
-        filename: file.name, type: file.type, uploadedAt: new Date().toISOString(),
-        enabled: false, parsing_status: '', file_path: `/${file.name}`,
-      },
-      documents: []
-    }));
+        // We use Promise.all to handle all file uploads concurrently
+        const uploadPromises = Array.from(files).map(file => {
+            const formData = new FormData();
+            formData.append('title', file.name); // The backend expects a title
+            formData.append('file', file);      // And the file itself
 
-    setDocuments(prev => [...prev, ...newDocs]);
-    setIsLoading(false);
-    toast({ title: "Succès", description: "Fichiers téléversés." });
-  }, [toast]);
+            return fetch(`${apiUrl}/documents/`, {
+                method: 'POST',
+                headers: {
+                    // Note: 'Content-Type' is set automatically by the browser for FormData
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+        });
 
-  return {
-    documents,
-    isLoading,
-    fetchDocuments,
-    handleDelete,
-    handleUpload,
-    handleDocumentUpdate,
-  };
+        try {
+            const responses = await Promise.all(uploadPromises);
+
+            // Check if any of the uploads failed
+            const failedUploads = responses.filter(res => !res.ok);
+            if (failedUploads.length > 0) {
+                throw new Error(`${failedUploads.length} file(s) failed to upload.`);
+            }
+
+            toast({ title: "✅ Success", description: "All files uploaded successfully." });
+            fetchDocuments(); // Refresh the list with the new documents
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Upload Error", description: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [apiUrl, token, toast, fetchDocuments]);
+
+    // --- 3. Connect handleDelete to the backend ---
+    const handleDelete = useCallback(async (id: string | number) => { // Accept number or string
+        if (!token) return;
+        if (!window.confirm(`Are you sure you want to delete this document?`)) return;
+
+        try {
+            const response = await fetch(`${apiUrl}/documents/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                 const errData = await response.json();
+                throw new Error(errData.detail || "Failed to delete document.");
+            }
+            toast({ title: "Success", description: "Document deleted." });
+            fetchDocuments(); // Refresh the list
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Error", description: error.message });
+        }
+    }, [apiUrl, token, toast, fetchDocuments]);
+
+    // --- 4. Connect handleDocumentUpdate to the backend (Bonus) ---
+    const handleDocumentUpdate = useCallback(async (updatedDoc: SimbaDoc) => {
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${apiUrl}/documents/${updatedDoc.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: updatedDoc.metadata.filename,
+                    // You can add other fields to update here
+                })
+            });
+             if (!response.ok) {
+                 const errData = await response.json();
+                throw new Error(errData.detail || "Failed to update document.");
+            }
+            toast({ title: "Success", description: "Document updated." });
+            fetchDocuments();
+        } catch(error: any) {
+             toast({ variant: 'destructive', title: "Error", description: error.message });
+        }
+    }, [apiUrl, token, toast, fetchDocuments]);
+
+    return {
+        documents,
+        isLoading,
+        fetchDocuments,
+        handleDelete,
+        handleUpload,
+        handleDocumentUpdate,
+    };
 };

@@ -73,21 +73,15 @@ Do not add any explanations or introductory text before or after the JSON object
 chain = structure_prompt | llm | JsonOutputParser()
 
 def create_structure(state: State) -> State:
-    """
-    Node that generates the final course structure based on the conversation history.
-    """
-    # We use the full message history to provide context
-    messages = state.messages
+    query = "\n".join([f"{m.type}: {m.content}" for m in state.messages])
+    structure_json = chain.invoke({"query": query})           # ← génère la structure
+    print(f"Generated structure: {structure_json}")
     
-    # We need to format the messages correctly for the prompt
-    query = "\n".join(
-        [f"{msg.type}: {msg.content}" for msg in messages]
-    )
-
-    response_json = chain.invoke({"query": query})
-    
-    # The response is a JSON object that we add to the state
     return {
-        "course_structure": response_json,
-        "messages": [AIMessage(content="Course structure generated successfully.")] # Placeholder message
+        "messages": [
+            AIMessage(                                    # s’affiche dans le chat
+                content="✅ Structure générée, envoi au front…"
+            )
+        ],
+        "course_structure": structure_json                # ← nouveau champ dans l’état
     }
