@@ -73,34 +73,15 @@ Do not add any explanations or introductory text before or after the JSON object
 chain = structure_prompt | llm | JsonOutputParser()
 
 def create_structure(state: State) -> State:
-    """
-    Génère la structure JSON, l'envoie à l'API pour la créer en base de données,
-    et retourne le nouvel ID de formation.
-    """
-    messages = state.messages
-    query = "\n".join([f"{msg.type}: {msg.content}" for msg in messages])
+    query = "\n".join([f"{m.type}: {m.content}" for m in state.messages])
+    structure_json = chain.invoke({"query": query})           # ← génère la structure
+    print(f"Generated structure: {structure_json}")
     
-    # 1. Générer la structure JSON
-    response_json = chain.invoke({"query": query})
-    
-    # 2. Envoyer la structure à l'API pour la création en DB
-    try:
-        # Note: Vous devrez gérer l'authentification si nécessaire.
-        # Pour l'instant, on suppose un accès direct pour la simplicité.
-        api_response = requests.post(f"{API_URL}/formations/", json=response_json)
-        api_response.raise_for_status() # Lève une exception si le statut est une erreur (4xx ou 5xx)
-        
-        created_formation = api_response.json()
-        new_formation_id = created_formation['id']
-        
-        # 3. Mettre à jour l'état avec le nouvel ID
-        return {
-            "new_formation_id": new_formation_id,
-            "messages": [AIMessage(content=f"Structure de formation créée avec l'ID {new_formation_id}.")]
-        }
-        
-    except requests.exceptions.RequestException as e:
-        # Gérer les erreurs de l'appel API
-        error_message = f"Erreur API lors de la création de la formation : {e}"
-        # On peut renvoyer une erreur ou un message spécifique au front
-        return {"messages": [AIMessage(content=error_message)]}
+    return {
+        "messages": [
+            AIMessage(                                    # s’affiche dans le chat
+                content="✅ Structure générée, envoi au front…"
+            )
+        ],
+        "course_structure": structure_json                # ← nouveau champ dans l’état
+    }

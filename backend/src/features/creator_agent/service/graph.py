@@ -31,16 +31,20 @@ def should_generate_structure(state: State) -> str:
     else:
         return END
 
+def should_start_with_generate(state: State) -> str:
+    last_msg = state.messages[-1]
+    if last_msg.content == "PROCEED_TO_GENERATION":
+        return "create_structure"
+    return "generate"
 
 # ===========================================
 # define the edges
-workflow.add_edge(START, "generate")
 workflow.add_conditional_edges(
-    "generate",
-    should_generate_structure,
+    START,
+    should_start_with_generate,
     {
-        "create_structure": "create_structure",
-        END: END
+        "generate": "generate",
+        "create_structure": "create_structure"
     }
 )
 workflow.add_edge("create_structure", END)

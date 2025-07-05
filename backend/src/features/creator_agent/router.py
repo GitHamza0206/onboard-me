@@ -1,10 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import AsyncGenerator, Dict, Any, List
 import json
 import asyncio
 from langchain_core.messages import HumanMessage
+from src.features.auth.dependencies import get_current_user, get_current_admin_user
+from fastapi import HTTPException, status
 
 from src.features.creator_agent.service.graph import graph
 
@@ -482,3 +484,31 @@ async def create_thread():
         "metadata": {},
         "status": "idle"
     }
+    
+class StructureRequest(BaseModel):
+    thread_id: str | None = None
+    prompt: str     
+
+@router.post("/structure", status_code=200)
+async def generate_structure(
+    req: StructureRequest,
+    current_user: dict = Depends(get_current_user)   # protégé
+):
+    """Retourne la structure JSON sans streaming."""
+    # 1. Construit l'état d'entrée
+    state = {"messages": [HumanMessage(content=req.prompt)]}
+    cfg   = {"configurable": {"thread_id": req.thread_id or f"thr_{uuid.uuid4()}"}}    
+
+    # 2. Exécute *synchroniquement* le graph
+    try:
+        result = await graph.ainvoke(state, cfg)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if "course_structure" not in result:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Aucune structure trouvée dans la réponse."
+        )
+
+    return result["course_structure"]   # <- pur JSON

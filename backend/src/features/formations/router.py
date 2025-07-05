@@ -61,6 +61,7 @@ def create_formation_from_structure(
     """
     try:
         # Appelle la fonction PostgreSQL avec le JSON de la formation
+        print("Payload envoyé à Supabase RPC:", formation_data.model_dump(by_alias=True))
         result = supabase.rpc('create_formation_from_structure', {
             'structure_json': formation_data.model_dump(by_alias=True) # Utilise .model_dump() pour pydantic v2
         }).execute()
@@ -72,6 +73,7 @@ def create_formation_from_structure(
         return {"id": new_formation_id, "nom": formation_data.title}
 
     except Exception as e:
+        print(f"Erreur lors de la création de la formation : {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur RPC lors de la création de la formation : {str(e)}"

@@ -8,7 +8,7 @@ import { Zap, ChevronLeft } from "lucide-react";
  * The header for the course generation page.
  * Displays a back button, the course title, lesson count, usage limit, and an upgrade button.
  */
-export function GenerationHeader() {
+export function GenerationHeader({ title }: { title: string }) {
   const navigate = useNavigate();
 
   return (
@@ -22,7 +22,7 @@ export function GenerationHeader() {
       {/* Section inférieure avec les informations du cours */}
       <div className="flex items-center justify-between p-4">
         <div>
-          <h1 className="text-xl font-semibold">Mastering Model Predictive Control (MPC)</h1>
+          <h1 className="text-xl font-semibold">{title || "Course"}</h1>
           <p className="text-sm text-muted-foreground">7 modules • 35 lessons</p>
         </div>
         <div>
