@@ -42,7 +42,7 @@ def authorize_app(
         #callback_url=app_callback_url,
     )
     print(f"connection_request: {connection_request.redirect_url}")
-    return RedirectResponse(url=connection_request.redirect_url)
+    return JSONResponse(content={"redirect_url": connection_request.redirect_url})
 
 
 @router.get("/validate", response_class=JSONResponse)
