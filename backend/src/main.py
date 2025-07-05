@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from settings import P_LOGGER
 
 from src.features.auth.router import router as auth_router
+from src.features.formations.router import router as formations_router 
 
 import os
 from dotenv import load_dotenv
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="server_chat", openapi_url="/openapi.json")
 
     app.include_router(auth_router)
+    app.include_router(formations_router) 
 
 
     # Ajout du middleware CORS
