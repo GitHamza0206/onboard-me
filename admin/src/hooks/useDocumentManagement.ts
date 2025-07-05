@@ -4,31 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 
 // --- Données de démonstration ---
 const initialDocs: SimbaDoc[] = [
-  {
-    id: 'doc_1',
-    metadata: {
-      filename: 'Rapport Annuel 2023.pdf', type: 'application/pdf', uploadedAt: '2025-06-15T10:00:00Z',
-      enabled: true, parsing_status: 'SUCCESS', parser: 'docling',
-      summary: 'Ce rapport détaille les performances financières...', file_path: '/path/to/doc1.pdf'
-    },
-    documents: [{ id: 'chunk_1', page_content: 'Contenu du chunk 1...', metadata: {} }]
-  },
-  {
-    id: 'doc_2',
-    metadata: {
-      filename: 'Présentation Marketing.pptx', type: 'application/vnd.ms-powerpoint', uploadedAt: '2025-07-01T15:00:00Z',
-      enabled: false, parsing_status: 'PENDING', parser: 'docling', file_path: '/path/to/doc2.pptx'
-    },
-    documents: []
-  },
-  {
-    id: 'doc_3',
-    metadata: {
-      filename: 'Notes de réunion.docx', type: 'application/msword', uploadedAt: '2025-05-30T09:00:00Z',
-      enabled: true, parsing_status: '', parser: 'docling', file_path: '/path/to/doc3.docx'
-    },
-    documents: []
-  },
 ];
 
 export const useDocumentManagement = () => {

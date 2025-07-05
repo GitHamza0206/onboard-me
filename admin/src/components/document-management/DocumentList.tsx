@@ -62,8 +62,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                         <TableHead className="w-8"><Checkbox /></TableHead>
                         <TableHead>Nom du Fichier</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Activé</TableHead>
                         <TableHead>Date d'ajout</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -82,17 +80,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                     <FileText className="h-4 w-4 text-muted-foreground" />
                                     <span className="font-medium">{doc.metadata.filename}</span>
                                 </div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={doc.metadata.parsing_status === 'SUCCESS' ? 'default' : 'secondary'} className={doc.metadata.parsing_status === 'SUCCESS' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                                    {doc.metadata.parsing_status || 'Non parsé'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Switch
-                                    checked={doc.metadata.enabled}
-                                    onCheckedChange={(checked) => onDocumentUpdate({ ...doc, metadata: { ...doc.metadata, enabled: checked }})}
-                                />
                             </TableCell>
                             <TableCell>{new Date(doc.metadata.uploadedAt).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
