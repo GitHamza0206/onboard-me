@@ -1,165 +1,126 @@
-// 📄 front/src/app/auth/authContext.tsx
-import { createContext, useContext, useEffect, useState, useCallback } from "react"; // Ajouter useCallback
+// app/auth/authContext.tsx
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Interface pour décrire la structure de l'objet utilisateur (basée sur UserInDB du backend)
+// L'interface doit correspondre à la réponse de votre route /auth/me
 interface UserProfile {
-  id: number;
-  first_name: string;
-  last_name: string;
+  id: string;
+  prenom: string | null;
+  nom: string | null;
+  is_admin: boolean;
   email: string;
-  registration_date: string; // ou Date si vous la parsez
-  subscription_type: string;
-  // Ajoutez d'autres champs si nécessaire depuis UserInDB
 }
 
-// Interface pour le contexte
 interface AuthContextType {
   user: UserProfile | null;
-  token: string | null; // Gardons le token accessible aussi
-  login: (token: string) => Promise<void>; // Rendre login asynchrone
-  logout: () => void;
-  loading: boolean; // Ajouter un état de chargement
+  token: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUpAdmin: (details: {email: string, password: string, prenom?: string, nom?: string}) => Promise<void>;
+  signOut: () => void;
+  loading: boolean;
 }
 
-// Donner un type plus précis au contexte créé
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) { // Typer children
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token")); // Gérer le token séparément
-  const [loading, setLoading] = useState<boolean>(true); // Initialiser à true
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const extensionId = import.meta.env.VITE_CHROME_EXTENSION_ID || "hpabpplocejflbbidmillajegdfjinhd";
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  // Fonction pour envoyer le token à l'extension Chrome
-  const sendTokenToExtension = useCallback((jwt: string | null) => {
-    if (!jwt) return;
-    if (typeof chrome !== "undefined" && chrome.runtime) {
-      console.log("🚀 Tentative d'envoi du JWT à l'extension...");
-      chrome.runtime.sendMessage(
-        extensionId,
-        { action: "storeJwt", jwt: jwt },
-        (response) => {
-          console.log("Réponse reçue de l'extension :", response);
-          if (chrome.runtime.lastError) {
-            console.warn("⚠️ Impossible de contacter l'extension :", chrome.runtime.lastError.message);
-          } else if (response?.status === "success") {
-            console.log("✅ JWT stocké avec succès dans l'extension !");
-          }
-        }
-      );
-    } else {
-      console.log("❌ API Chrome non disponible, stockage local uniquement.");
-    }
-  }, [extensionId]);
-
-  
-
-  // Fonction pour récupérer le profil utilisateur
   const fetchUserProfile = useCallback(async (currentToken: string): Promise<UserProfile | null> => {
     if (!currentToken) return null;
     try {
-      const response = await fetch(`${apiUrl}/myprofile/`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${currentToken}`,
-        },
+      // On appelle la route /auth/me du backend
+      const response = await fetch(`${apiUrl}/auth/me`, {
+        headers: { "Authorization": `Bearer ${currentToken}` },
       });
       if (!response.ok) {
-        // Si le token est invalide (401 Unauthorized par exemple), déconnecter
-        if (response.status === 401) {
-            console.warn("Token invalide ou expiré lors de la récupération du profil.");
-            return null; // Indique que le profil n'a pas pu être récupéré
-        }
-        throw new Error(`Erreur ${response.status} lors de la récupération du profil`);
+        throw new Error("Token invalide ou expiré");
       }
-      const profileData: UserProfile = await response.json();
-      return profileData;
+      return await response.json();
     } catch (error) {
       console.error("Erreur fetchUserProfile:", error);
-      return null; // Retourne null en cas d'erreur réseau ou autre
+      localStorage.removeItem("token");
+      return null;
     }
-  }, [apiUrl]); // Dépendances de useCallback
+  }, [apiUrl]);
 
-  // Effet pour vérifier le token au montage et récupérer le profil
   useEffect(() => {
     const checkAuth = async () => {
-      setLoading(true);
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) {
-        const profile = await fetchUserProfile(storedToken);
-        if (profile) {
-          setUser(profile);
-          setToken(storedToken); // Mettre à jour l'état du token
-          sendTokenToExtension(storedToken); // Envoyer à l'extension si valide
-        } else {
-          // Si le profil n'a pas pu être récupéré (token invalide/expiré)
-          localStorage.removeItem("token");
-          setUser(null);
-          setToken(null);
-        }
-      } else {
-          setUser(null);
-          setToken(null);
+      if (token) {
+        const profile = await fetchUserProfile(token);
+        setUser(profile);
       }
       setLoading(false);
     };
     checkAuth();
-  }, [fetchUserProfile, sendTokenToExtension]); 
+  }, [token, fetchUserProfile]);
 
-
-  
-  const login = useCallback(async (newToken: string) => {
-      setLoading(true);
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-
-      const profile = await fetchUserProfile(newToken);
-
-      if (profile) {
-          setUser(profile);
-          sendTokenToExtension(newToken);
-          navigate("/dashboard");
-      } else {
-          console.error("Impossible de récupérer le profil après la connexion.");
-          localStorage.removeItem("token");
-          setUser(null);
-          setToken(null);
+  const signIn = useCallback(async (email, password) => {
+    setLoading(true);
+    try {
+      // On appelle la route /auth/signin du backend
+      const response = await fetch(`${apiUrl}/auth/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "La connexion a échoué");
       }
+      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
+      const profile = await fetchUserProfile(data.access_token);
+      setUser(profile);
+      navigate("/courses");
+    } catch (error) {
+      console.error(error);
+      // Gérer l'affichage de l'erreur à l'utilisateur
+    } finally {
       setLoading(false);
-  }, [fetchUserProfile, navigate, sendTokenToExtension]);
+    }
+  }, [apiUrl, fetchUserProfile, navigate]);
 
-  // Fonction de déconnexion
-  const logout = useCallback(() => {
+  const signUpAdmin = useCallback(async (details) => {
+     try {
+        // On appelle la route /auth/signup/admin du backend
+        const response = await fetch(`${apiUrl}/auth/signup/admin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(details)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "L'inscription a échoué");
+        }
+        // Rediriger vers la page de connexion après une inscription réussie
+        navigate('/auth');
+     } catch (error) {
+        console.error(error);
+        // Gérer l'affichage de l'erreur
+     }
+  }, [apiUrl, navigate]);
+
+
+  const signOut = useCallback(() => {
     localStorage.removeItem("token");
     setUser(null);
-    setToken(null); // Vider l'état du token
-    navigate("/auth"); // Rediriger vers la page de connexion
-    setLoading(false); // Assurer que loading est false après logout
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]); // sendTokenToExtension retiré si non utilisé pour le logout
+    setToken(null);
+    navigate("/auth");
+  }, [navigate]);
 
-
-  // Fournir la valeur au contexte
-  const contextValue = {
-    user,
-    token, // Fournir aussi le token
-    login,
-    logout,
-    loading, // Fournir l'état de chargement
-  };
+  const value = { user, token, signIn, signUpAdmin, signOut, loading };
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook personnalisé pour utiliser le contexte
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

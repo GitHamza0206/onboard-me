@@ -20,28 +20,30 @@ def get_current_user(credentials: str = Depends(scheme)):
     """
     Valide le token JWT de Supabase et retourne les informations de l'utilisateur.
     """
-    token = credentials.credentials # On récupère le token depuis l'objet credentials
+    token = credentials.credentials
 
     try:
-        # Décoder le token avec la clé secrète pour vérifier son authenticité
         payload = jwt.decode(
-            token, SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
+            token,
+            SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",
+            leeway=10  
         )
-        
-        # Le payload contient les infos de l'utilisateur, comme son ID (sub)
         return payload
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.InvalidTokenError:
+    # --- MODIFICATION ICI ---
+    except jwt.InvalidTokenError as e:
+        # Affiche la raison exacte de l'échec dans votre terminal
+        print(f"--- INVALID TOKEN ERROR --- : {e}") 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail=f"Invalid token: {e}", # Affiche aussi l'erreur dans la réponse API
         )
         
 def get_current_admin_user(current_user: dict = Depends(get_current_user)):

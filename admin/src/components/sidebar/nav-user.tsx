@@ -21,6 +21,7 @@ import {
 // import { logout } from "@/app/auth/authService";
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
+import { useAuth } from "@/app/auth/authContext"
 // import apiFetch from "@/app/auth/apiFetch.tsx";
 // import { useUser } from "@/app/auth/UserContext"; // Import du contexte utilisateur
 
@@ -42,46 +43,20 @@ const getInitials = (name: string): string => {
 export function NavUser() {
     const { isMobile } = useSidebar()
     const navigate = useNavigate();
+    
 
     // Utiliser le contexte utilisateur au lieu de l'état local
-    // const { user, loading } = useUser();
+    const { user, signOut, loading } = useAuth();
 
     const [error, setError] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const apiUrl = import.meta.env.VITE_API_URL;
 
-    // if (loading || !user) return <SidebarMenu />;
+    if (loading || !user) return <SidebarMenu />;
 
     // // Construit le nom complet pour l'affichage
-    // const fullName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    // const userInitials = getInitials(fullName);
-    const fullName = "thomas gossin"; // Placeholder for user initials, replace with actual logic
+    const fullName =  `${user.prenom || ''} ${user.nom || ''}`.trim();
     const userInitials = getInitials(fullName);
-    // const handleOpenBillingPortal = async () => {
-    //     try {
-    //         setIsLoading(true)
-
-    //         let response = await apiFetch(`${apiUrl}/stripe/billing`, {
-    //             method: "GET",
-    //             headers: {
-    //                 Accept: "application/json"
-    //             },
-    //         }, navigate)
-
-    //         if (!response.ok) {
-    //             throw new Error("Une erreur est survenue lors de la création du portail.");
-    //         }
-
-    //         const data = await response.json()
-    //         window.location.href = data.url;
-    //     } catch (err: any) {
-    //         console.error("Erreur lors de la création du portail Stripe", err);
-    //         alert("Une erreur est survenue. Veuillez réessayer plus tard.");
-    //         setError(err.message)
-    //     } finally {
-    //         setIsLoading(false)
-    //     }
-    // };
 
     return (
         <SidebarMenu>
@@ -100,7 +75,7 @@ export function NavUser() {
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">{fullName}</span>
-                                <span className="truncate text-xs">{"user.email"}</span>
+                                <span className="truncate text-xs">{user.email}</span>
                             </div>
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
@@ -119,7 +94,7 @@ export function NavUser() {
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">{fullName}</span>
-                                    <span className="truncate text-xs">{"user.email"}</span>
+                                    <span className="truncate text-xs">{user.email}</span>
                                 </div>
                             </div>
                         </DropdownMenuLabel>
@@ -146,7 +121,7 @@ export function NavUser() {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {}}>
+                        <DropdownMenuItem onClick={signOut}>
                             <LogOut size={16} />
                             Log out
                         </DropdownMenuItem>
