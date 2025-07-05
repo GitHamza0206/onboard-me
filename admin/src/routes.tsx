@@ -10,6 +10,8 @@ import { EditorPage } from "./app/editor/page";
 import Layout from "./layout";
 import { CreatePage } from "./app/create/page";
 import { GenerationPage } from "./app/generation/structure";
+import { UsersPage } from "./app/users/page";
+import { AnalyticsPage } from "./app/analytics/page";
 
 // This component provides the global authentication context.
 function Root() {
@@ -60,8 +62,24 @@ const router = createBrowserRouter([
         path: "/courseGeneration/:courseId",
         element: (
           // <ProtectedRoute>
-            <OnboardingPage />
+          <OnboardingPage />
           // </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/users",
+        element: (
+          <Layout>
+            <UsersPage />
+          </Layout>
+        )
+      },
+      { 
+        path: "/analytics",
+        element: (
+          <Layout>
+            <AnalyticsPage />
+          </Layout>
         )
       },
       {

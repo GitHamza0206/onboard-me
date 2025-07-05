@@ -124,22 +124,22 @@ export function NavUser() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
+                        {/* <DropdownMenuGroup>
                             <DropdownMenuItem>
                                 <Sparkles size={16} />
                                 Upgrade to Pro
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator /> */}
                         <DropdownMenuGroup>
                             <DropdownMenuItem onClick={() => navigate("/account")}>
                                 <BadgeCheck size={16} />
                                 Account
                             </DropdownMenuItem>
-                            <DropdownMenuItem  disabled={isLoading}>
+                            {/* <DropdownMenuItem  disabled={isLoading}>
                                 <CreditCard size={16} />
                                 Billing
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuItem onClick={() => navigate("/notifications")}>
                                 <Bell size={16} />
                                 Notifications
