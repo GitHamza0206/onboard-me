@@ -15,5 +15,7 @@ dependencies = [
     "uvicorn>=0.35.0",
     "supabase",
     "pydantic[email]",
-    "PyJWT[crypto]"
+    "PyJWT[crypto]",
+    "unstructured[pdf,pptx]",
+    "pytesseract"
 ]
