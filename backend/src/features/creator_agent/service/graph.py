@@ -33,8 +33,8 @@ workflow.add_conditional_edges(
     should_continue,
     {"tools": "tools", END: END},
 )
-workflow.add_edge("tools", "generate")
-
+#workflow.add_edge("tools", "generate")
+workflow.add_edge("generate", END)
 # Compile
 graph = workflow.compile(checkpointer=memory)
 

@@ -9,6 +9,9 @@ import operator
 class State(BaseModel):
 
     messages: Annotated[list[BaseMessage], add_messages]
+
+    user_id: Optional[str] = None
+    knowledge: Optional[str] = None
     confidence_score: int = 0
     course_structure: Optional[Dict[str, Any]] = None
     
