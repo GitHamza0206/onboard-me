@@ -1,6 +1,6 @@
 // src/components/course/course-nav.tsx
 import { useState, useEffect } from "react";
-import { Circle } from "lucide-react";
+import { Circle, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -62,30 +62,50 @@ export function CourseNav({
                 </AccordionTrigger>
                 <AccordionContent>
                   <ul className="pl-4 mt-1 space-y-1">
-                    {module.lessons.map((lesson) => (
-                      <li key={lesson.id}>
-                        <button
-                          onClick={() => onSelectLesson(lesson)}
-                          className={cn(
-                            "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm",
-                            lesson.id === activeLessonId
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                          )}
-                        >
-                          <Circle
+                    {module.lessons.map((lesson) => {
+                      const isQuiz = lesson.type === 'quiz';
+                      return (
+                        <li key={lesson.id}>
+                          <button
+                            onClick={() => onSelectLesson(lesson)}
                             className={cn(
-                              "w-2 h-2",
+                              "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm",
                               lesson.id === activeLessonId
-                                ? "text-primary"
-                                : "text-gray-400"
+                                ? isQuiz 
+                                  ? "bg-orange-50 text-orange-700 font-medium border border-orange-200"
+                                  : "bg-primary/10 text-primary font-medium"
+                                : isQuiz
+                                  ? "text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                             )}
-                            fill="currentColor"
-                          />
-                          {lesson.title}
-                        </button>
-                      </li>
-                    ))}
+                          >
+                            {isQuiz ? (
+                              <HelpCircle
+                                className={cn(
+                                  "w-3 h-3",
+                                  lesson.id === activeLessonId
+                                    ? "text-orange-700"
+                                    : "text-orange-500"
+                                )}
+                              />
+                            ) : (
+                              <Circle
+                                className={cn(
+                                  "w-2 h-2",
+                                  lesson.id === activeLessonId
+                                    ? "text-primary"
+                                    : "text-gray-400"
+                                )}
+                                fill="currentColor"
+                              />
+                            )}
+                            <span className={isQuiz ? "font-medium" : ""}>
+                              {lesson.title}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </AccordionContent>
               </AccordionItem>

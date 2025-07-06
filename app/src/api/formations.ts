@@ -9,6 +9,8 @@ export interface LessonData {
   title: string;
   description: string;
   content: string;
+  type?: 'lesson' | 'quiz';
+  moduleId?: string;
 }
 
 /**
@@ -56,5 +58,35 @@ export async function getFormationDetails(
     throw new Error(errorData.detail || "Failed to fetch formation details.");
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Inject quiz lessons at the end of each module
+  return injectQuizLessons(data);
+}
+
+/**
+ * Injects quiz lessons at the end of each module
+ */
+function injectQuizLessons(formation: FormationData): FormationData {
+  const modulesWithQuiz = formation.modules.map(module => {
+    // Create a quiz lesson for each module
+    const quizLesson: LessonData = {
+      id: `quiz_${module.id}`,
+      title: `Quiz - ${module.title}`,
+      description: `Testez vos connaissances sur ${module.title}`,
+      content: '', // Will be handled by QuizComponent
+      type: 'quiz',
+      moduleId: module.id
+    };
+
+    return {
+      ...module,
+      lessons: [...module.lessons, quizLesson]
+    };
+  });
+
+  return {
+    ...formation,
+    modules: modulesWithQuiz
+  };
 }

@@ -18,6 +18,34 @@ export function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to get all lessons in order
+  const getAllLessons = (): LessonData[] => {
+    if (!formation) return [];
+    return formation.modules.flatMap(module => module.lessons);
+  };
+
+  // Navigation functions
+  const navigateToNextLesson = () => {
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+      setActiveLesson(allLessons[currentIndex + 1]);
+    }
+  };
+
+  const navigateToPreviousLesson = () => {
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    if (currentIndex > 0) {
+      setActiveLesson(allLessons[currentIndex - 1]);
+    }
+  };
+
+  const handleQuizComplete = () => {
+    console.log('Quiz completed, moving to next lesson...');
+    navigateToNextLesson();
+  };
+
   useEffect(() => {
     const fetchCourse = async () => {
       if (!token || !courseId) {
@@ -87,6 +115,9 @@ export function OnboardingPage() {
       {/* Main Content (Center) */}
       <CourseContent
         lesson={activeLesson}
+        onQuizComplete={handleQuizComplete}
+        onNextLesson={navigateToNextLesson}
+        onPreviousLesson={navigateToPreviousLesson}
       />
 
       {/* Support Chat (Right) */}
