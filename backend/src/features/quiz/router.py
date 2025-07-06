@@ -19,28 +19,33 @@ async def get_module_quiz(
         if not user_id:
             raise HTTPException(status_code=401, detail="Token utilisateur invalide")
 
-        # 1. Vérifier que l'utilisateur a accès à ce module
-        # D'abord, trouver la formation qui contient ce module
-        formation_response = supabase.table("formation_modules").select("formation_id").eq("module_id", module_id).execute()
+        # 1. Vérifier si l'utilisateur est admin
+        user_profile_response = supabase.table('profiles').select('is_admin').eq('id', user_id).execute()
+        is_admin = user_profile_response.data and user_profile_response.data[0].get('is_admin', False)
         
-        if not formation_response.data:
-            raise HTTPException(status_code=404, detail="Module not found in any formation")
-        
-        formation_id = formation_response.data[0]["formation_id"]
-        
-        # Vérifier que l'utilisateur a accès à cette formation
-        user_formation_response = supabase.table('user_formations').select('*').eq(
-            'user_id', user_id
-        ).eq('formation_id', formation_id).execute()
-        
-        if not user_formation_response.data:
-            raise HTTPException(status_code=403, detail="Formation non assignée à cet utilisateur")
+        if not is_admin:
+            # Si ce n'est pas un admin, appliquer les restrictions normales
+            # D'abord, trouver la formation qui contient ce module
+            formation_response = supabase.table("formation_modules").select("formation_id").eq("module_id", module_id).execute()
+            
+            if not formation_response.data:
+                raise HTTPException(status_code=404, detail="Module not found in any formation")
+            
+            formation_id = formation_response.data[0]["formation_id"]
+            
+            # Vérifier que l'utilisateur a accès à cette formation
+            user_formation_response = supabase.table('user_formations').select('*').eq(
+                'user_id', user_id
+            ).eq('formation_id', formation_id).execute()
+            
+            if not user_formation_response.data:
+                raise HTTPException(status_code=403, detail="Formation non assignée à cet utilisateur")
 
-        # Vérifier que le module est accessible selon la progression
-        accessible_modules = ProgressionService.get_accessible_modules(user_id, formation_id)
-        
-        if module_id not in accessible_modules:
-            raise HTTPException(status_code=403, detail="Module non accessible. Complétez les modules précédents.")
+            # Vérifier que le module est accessible selon la progression
+            accessible_modules = ProgressionService.get_accessible_modules(user_id, formation_id)
+            
+            if module_id not in accessible_modules:
+                raise HTTPException(status_code=403, detail="Module non accessible. Complétez les modules précédents.")
 
         # 2. Récupérer le quiz du module
         quiz_response = supabase.table("quizzes").select("*").eq("module_id", module_id).eq("is_active", True).execute()
@@ -166,23 +171,28 @@ async def submit_quiz(
         module_id = quiz["module_id"]
         passing_score = quiz["passing_score"]
         
-        # 2. Vérifier l'accès au module (même logique que get_module_quiz)
-        formation_response = supabase.table("formation_modules").select("formation_id").eq("module_id", module_id).execute()
-        if not formation_response.data:
-            raise HTTPException(status_code=404, detail="Module non trouvé")
+        # 2. Vérifier si l'utilisateur est admin
+        user_profile_response = supabase.table('profiles').select('is_admin').eq('id', user_id).execute()
+        is_admin = user_profile_response.data and user_profile_response.data[0].get('is_admin', False)
         
-        formation_id = formation_response.data[0]["formation_id"]
-        
-        user_formation_response = supabase.table('user_formations').select('*').eq(
-            'user_id', user_id
-        ).eq('formation_id', formation_id).execute()
-        
-        if not user_formation_response.data:
-            raise HTTPException(status_code=403, detail="Formation non assignée")
+        if not is_admin:
+            # Si ce n'est pas un admin, vérifier l'accès au module
+            formation_response = supabase.table("formation_modules").select("formation_id").eq("module_id", module_id).execute()
+            if not formation_response.data:
+                raise HTTPException(status_code=404, detail="Module non trouvé")
+            
+            formation_id = formation_response.data[0]["formation_id"]
+            
+            user_formation_response = supabase.table('user_formations').select('*').eq(
+                'user_id', user_id
+            ).eq('formation_id', formation_id).execute()
+            
+            if not user_formation_response.data:
+                raise HTTPException(status_code=403, detail="Formation non assignée")
 
-        accessible_modules = ProgressionService.get_accessible_modules(user_id, formation_id)
-        if module_id not in accessible_modules:
-            raise HTTPException(status_code=403, detail="Module non accessible")
+            accessible_modules = ProgressionService.get_accessible_modules(user_id, formation_id)
+            if module_id not in accessible_modules:
+                raise HTTPException(status_code=403, detail="Module non accessible")
 
         # 3. Calculer le score
         total_score = 0
