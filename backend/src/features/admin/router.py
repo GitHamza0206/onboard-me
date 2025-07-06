@@ -39,7 +39,7 @@ def create_user_as_admin(
         created_user_response = supabase.auth.admin.create_user({
             "email": new_user_data.email,
             "password": "tototiti",
-            "email_confirm": True
+            "email_confirm": False
         })
         
         new_user = created_user_response.user
@@ -76,7 +76,7 @@ def create_user_as_admin(
 
 
 @router.get("/users", response_model=List[schema.UserProfileResponse])
-def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
+async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
     """
     (Admin only) Retrieves the list of all users managed by the logged-in admin.
     """
@@ -84,6 +84,7 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
 
     try:
         managed_users_response = supabase.table('managed_users').select('user_id').eq('manager_id', admin_id).execute()
+        print(f"--- MANAGED USERS RESPONSE: {managed_users_response.data} ---")
         
         if not managed_users_response.data:
             return []
