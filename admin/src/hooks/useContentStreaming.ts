@@ -11,6 +11,7 @@ export interface StreamingProgress {
     id: string;
     title: string;
     progress: string;
+    streamingContent?: string; // Accumulate streaming content
   };
   totalLessons?: number;
   completedLessons?: number;
@@ -18,6 +19,7 @@ export interface StreamingProgress {
   isCompleted: boolean;
   error?: string;
   messages: string[];
+  currentStreamingContent: string; // Accumulate current lesson content being streamed
 }
 
 export interface UseContentStreamingReturn {
@@ -36,6 +38,7 @@ export function useContentStreaming(
     isGenerating: false,
     isCompleted: false,
     messages: [],
+    currentStreamingContent: '',
   });
   const [isConnected, setIsConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -60,6 +63,7 @@ export function useContentStreaming(
       isCompleted: false,
       error: undefined,
       messages: [],
+      currentStreamingContent: '',
     }));
 
     try {
@@ -124,10 +128,24 @@ export function useContentStreaming(
                           newProgress.messages = [...prev.messages, eventData.message];
                           break;
                           
+                        case 'messages':
+                          // Accumulate token-by-token content for the current lesson
+                          newProgress.currentStreamingContent = prev.currentStreamingContent + eventData;
+                          break;
+                          
                         case 'updates':
                           if (eventData.messages) {
                             const updateMessages = eventData.messages.map((msg: any) => msg.content);
                             newProgress.messages = [...prev.messages, ...updateMessages];
+                            
+                            // Check if this is a lesson completion message
+                            const completionMsg = updateMessages.find((msg: string) => 
+                              msg.includes('✅ Leçon terminée:') || msg.includes('✅💾 Leçon sauvegardée:')
+                            );
+                            if (completionMsg) {
+                              // Lesson completed, reset streaming content for next lesson
+                              newProgress.currentStreamingContent = '';
+                            }
                           }
                           break;
                           
@@ -141,12 +159,14 @@ export function useContentStreaming(
                               id: eventData.lesson_generated.lesson_id,
                               title: eventData.lesson_generated.lesson_title,
                               progress: eventData.lesson_generated.progress,
+                              streamingContent: prev.currentStreamingContent,
                             };
                           }
                           if (eventData.formation_completed) {
                             newProgress.isGenerating = false;
                             newProgress.isCompleted = true;
                             newProgress.totalLessons = eventData.formation_completed.total_lessons;
+                            newProgress.currentStreamingContent = '';
                           }
                           break;
                           

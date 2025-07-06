@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
+import { StreamingContent } from "@/components/course/StreamingContent";
 import { HomeHeader } from "@/components/generation/HomeHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useContentStreaming } from "@/hooks/useContentStreaming";
@@ -117,15 +118,27 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
     }
   }, [streaming.progress.isCompleted]);
 
-  // Show progress messages
+  // Show progress messages and auto-switch to lesson being generated
   useEffect(() => {
     if (streaming.progress.currentLesson) {
       toast({
         title: "📚 Leçon générée",
         description: `${streaming.progress.currentLesson.title} (${streaming.progress.currentLesson.progress})`,
       });
+      
+      // Auto-switch to the lesson being generated if no lesson is currently active
+      // or if a different lesson is being generated
+      if (!activeLesson || activeLesson.id !== streaming.progress.currentLesson.id) {
+        const currentLessonData = modules
+          .flatMap(m => m.lessons)
+          .find(l => l.id === streaming.progress.currentLesson?.id);
+        
+        if (currentLessonData) {
+          setActiveLesson(currentLessonData);
+        }
+      }
     }
-  }, [streaming.progress.currentLesson]);
+  }, [streaming.progress.currentLesson, activeLesson, modules]);
 
   // Show errors
   useEffect(() => {
@@ -239,13 +252,26 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
           activeLessonId={activeLesson?.id}
           onSelectLesson={setActiveLesson}
         />
-        <CourseContent
-          // Fournir le contenu de la leçon active ou une chaîne vide
-          content={activeLesson?.content || "<h1>Sélectionnez une leçon pour commencer.</h1>"}
-          setContent={handleContentChange}
-          currentLesson={activeLesson}
-          moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
-        />
+        
+        {/* Show streaming content if currently generating and lesson is selected */}
+        {streaming.progress.isGenerating && activeLesson && 
+         streaming.progress.currentLesson?.id === activeLesson.id ? (
+          <StreamingContent
+            content={streaming.progress.currentStreamingContent}
+            currentLesson={streaming.progress.currentLesson}
+            moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
+            isStreaming={true}
+          />
+        ) : (
+          <CourseContent
+            // Fournir le contenu de la leçon active ou une chaîne vide
+            content={activeLesson?.content || "<h1>Sélectionnez une leçon pour commencer.</h1>"}
+            setContent={handleContentChange}
+            currentLesson={activeLesson}
+            moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
+          />
+        )}
+        
         <SupportChat />
       </div>
     </div>
