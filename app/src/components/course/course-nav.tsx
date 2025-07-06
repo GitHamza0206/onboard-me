@@ -28,7 +28,6 @@ export function CourseNav({
 }: CourseNavProps) {
   const [openModuleId, setOpenModuleId] = useState<string | undefined>();
 
-  // Effect to automatically open the accordion for the active lesson's module
   useEffect(() => {
     if (activeLessonId) {
       const parentModule = modules.find((module) =>
@@ -38,18 +37,20 @@ export function CourseNav({
         setOpenModuleId(parentModule.id);
       }
     } else if (modules.length > 0) {
-      // Open the first module by default if no lesson is active
       setOpenModuleId(modules[0].id);
     }
   }, [activeLessonId, modules]);
 
   return (
-    <div className={cn("flex-shrink-0 w-72 border-r bg-gray-50/75", className)}>
-      <div className="p-4">
+    // 👇 MODIFICATION 1 : Le conteneur principal devient flex et vertical
+    <div className={cn("flex-shrink-0 w-72 border-r bg-gray-50/75 flex flex-col", className)}>
+      <div className="p-4 flex-shrink-0">
         <h2 className="text-lg font-semibold mb-1 truncate">{courseTitle}</h2>
         <p className="text-sm text-muted-foreground">Course Content</p>
       </div>
-      <ScrollArea className="h-[calc(100vh-8rem)] px-2">
+      
+      {/* 👇 MODIFICATION 2 : La ScrollArea prend l'espace restant et n'a plus de hauteur fixe */}
+      <ScrollArea className="flex-1 px-2">
         <div className="p-2">
           <Accordion
             type="single"

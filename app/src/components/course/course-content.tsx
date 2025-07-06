@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// --- Imports pour les extensions Tiptap (identiques à votre admin) ---
+// --- Gardez tous vos imports et configurations Tiptap ici ---
 import StarterKit from '@tiptap/starter-kit';
 import { Color } from '@tiptap/extension-color';
 import ListItem from '@tiptap/extension-list-item';
@@ -26,22 +26,18 @@ import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
-
-// --- Imports pour la coloration syntaxique (identiques à votre admin) ---
 import { lowlight } from 'lowlight/lib/core';
 import css from 'highlight.js/lib/languages/css';
 import js from 'highlight.js/lib/languages/javascript';
 import ts from 'highlight.js/lib/languages/typescript';
 import html from 'highlight.js/lib/languages/xml';
-import { CodeBlockComponent } from "../../../../admin/src/components/editor/CodeBlockComponent"; // Assurez-vous que ce chemin est correct
+import { CodeBlockComponent } from "../../../../admin/src/components/editor/CodeBlockComponent";
 
-// Enregistrement des langages pour la coloration syntaxique
 lowlight.registerLanguage('html', html);
 lowlight.registerLanguage('css', css);
 lowlight.registerLanguage('js', js);
 lowlight.registerLanguage('ts', ts);
 
-// --- Définition des extensions Tiptap (copiées de votre admin) ---
 const tiptapExtensions = [
   Color.configure({ types: [TextStyle.name, ListItem.name] }),
   TextStyle.configure({ types: [ListItem.name] }),
@@ -100,7 +96,6 @@ export function CourseContent({
     },
   });
 
-  // Synchroniser le contenu quand l'utilisateur change de leçon
   useEffect(() => {
     if (!editor || !lesson || lesson.type === 'quiz') {
       return;
@@ -111,7 +106,7 @@ export function CourseContent({
   }, [lesson, editor]);
 
   return (
-    <div className={cn("flex-1 bg-white flex flex-col h-full", className)}>
+    <div className={cn("flex-1 flex flex-col min-h-0 overflow-hidden bg-white", className)}>
       <ScrollArea className="flex-1">
         <div className="max-w-4xl mx-auto p-8">
           {lesson ? (
@@ -179,7 +174,7 @@ export function CourseContent({
       </ScrollArea>
       {/* Footer for lesson navigation - hidden during quiz */}
       {lesson && lesson.type !== 'quiz' && (
-        <footer className="sticky bottom-0 bg-white/80 backdrop-blur-sm border-t p-4 flex justify-between items-center">
+        <footer className="flex-shrink-0 border-t p-4 flex justify-between items-center">
           <Button
             variant="outline"
             disabled={!lesson}
