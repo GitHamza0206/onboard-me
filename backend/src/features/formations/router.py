@@ -232,3 +232,32 @@ def update_formation_content(
         raise HTTPException(status_code=500, detail=f"Erreur Supabase: {e.message}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur interne du serveur: {str(e)}")
+    
+
+@router.get("/users/me/formations", response_model=List[schema.Formation])
+def get_my_formations(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupère la liste de toutes les formations assignées à l'utilisateur connecté.
+    """
+    try:
+        user_id = current_user.get('sub')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID not found in token")
+
+        # 1. Récupérer les IDs des formations assignées à l'utilisateur
+        user_formations_response = supabase.table('user_formations').select('formation_id').eq('user_id', user_id).execute()
+        
+        assigned_formation_ids = [item['formation_id'] for item in user_formations_response.data]
+
+        if not assigned_formation_ids:
+            return []
+
+        # 2. Récupérer les détails de ces formations
+        formations_response = supabase.table('formations').select('*').in_('id', assigned_formation_ids).execute()
+        
+        return formations_response.data
+        
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

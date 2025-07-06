@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/auth/authContext";
 import { AddUserModal } from "@/components/admin/AddUserModal";
+import { AssignFormationModal } from "@/components/admin/AssignFormationModal"; // Import the new modal
 
 import {
     Avatar, AvatarFallback, AvatarImage,
@@ -13,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { MoreHorizontal, Pencil, Rocket, Trash2, User as UserIcon } from "lucide-react";
+import { MoreHorizontal, Pencil, Rocket, Trash2, User as UserIcon, BookCopy } from "lucide-react"; // Add BookCopy icon
 
 type User = {
     id: string;
@@ -45,7 +46,12 @@ const getInitials = (name: string) => {
 export function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
+
+    // State for the assignment modal
+    const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
     const { token } = useAuth();
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -73,6 +79,11 @@ export function UsersPage() {
         fetchUsers();
     }, [fetchUsers]);
 
+    const handleOpenAssignModal = (user: User) => {
+        setSelectedUser(user);
+        setAssignModalOpen(true);
+    };
+
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -80,7 +91,7 @@ export function UsersPage() {
                 <main className="flex-1 p-8 space-y-8">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold">Gestion des Utilisateurs</h1>
-                        <Button onClick={() => setIsModalOpen(true)}>Ajouter un utilisateur</Button>
+                        <Button onClick={() => setAddUserModalOpen(true)}>Ajouter un utilisateur</Button>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
                         <Table>
@@ -131,6 +142,10 @@ export function UsersPage() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem><UserIcon className="mr-2 h-4 w-4" />Voir le profil</DropdownMenuItem>
                                                         <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" />Éditer</DropdownMenuItem>
+                                                        {/* Add the new action button here */}
+                                                        <DropdownMenuItem onClick={() => handleOpenAssignModal(user)}>
+                                                            <BookCopy className="mr-2 h-4 w-4" />Assigner une formation
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem><Rocket className="mr-2 h-4 w-4" />Relancer l'onboarding</DropdownMenuItem>
                                                         <DropdownMenuItem className="text-red-500"><Trash2 className="mr-2 h-4 w-4" />Désactiver</DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -144,10 +159,17 @@ export function UsersPage() {
                     </div>
                 </main>
             </SidebarInset>
-            <AddUserModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+            <AddUserModal
+                isOpen={isAddUserModalOpen}
+                onClose={() => setAddUserModalOpen(false)}
                 onUserAdded={fetchUsers}
+            />
+            {/* Render the new modal */}
+            <AssignFormationModal
+                isOpen={isAssignModalOpen}
+                onClose={() => setAssignModalOpen(false)}
+                userId={selectedUser?.id ?? null}
+                userName={selectedUser?.fullName ?? ""}
             />
         </SidebarProvider>
     );
