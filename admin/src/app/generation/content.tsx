@@ -138,7 +138,7 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
         }
       }
     }
-  }, [streaming.progress.currentLesson, activeLesson, modules]);
+  }, [streaming.progress.currentLesson, activeLesson, modules, toast]);
 
   // Show errors
   useEffect(() => {
@@ -149,7 +149,7 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
         description: streaming.progress.error,
       });
     }
-  }, [streaming.progress.error]);
+  }, [streaming.progress.error, toast]);
 
   // Fonction pour obtenir le titre du module d'une leçon
   const getModuleTitle = (lessonId: string): string => {
