@@ -5,7 +5,9 @@ import { useAuth } from "@/app/auth/authContext";
 import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
-import { getFormationDetails, FormationData, LessonData } from "@/api/formations";
+<<<<<<< HEAD
+import { getFormationWithProgression, FormationWithProgression, LessonData, ProgressionSummary } from "@/api/formations";
+>>>>>>> feat/generate_quizz
 import { BackHeader } from "@/components/layout/BackHeader"; // Import du header
 
 export function OnboardingPage() {
@@ -14,10 +16,97 @@ export function OnboardingPage() {
   const { token } = useAuth();
 
   // State for loading, error handling, and course data
-  const [formation, setFormation] = useState<FormationData | null>(null);
+  const [formation, setFormation] = useState<FormationWithProgression | null>(null);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progression, setProgression] = useState<ProgressionSummary | null>(null);
+
+  // Helper function to get all lessons in order from accessible modules
+  const getAllLessons = (): LessonData[] => {
+    if (!formation) return [];
+    return formation.modules.flatMap(module => module.lessons);
+  };
+
+  // Helper function to check if a lesson is accessible
+  const isLessonAccessible = (lessonId: string): boolean => {
+    if (!formation) return false;
+    
+    for (const module of formation.modules) {
+      if (module.is_accessible !== false && module.lessons.some(lesson => lesson.id === lessonId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Navigation functions with progression control
+  const navigateToNextLesson = () => {
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      if (isLessonAccessible(nextLesson.id)) {
+        setActiveLesson(nextLesson);
+      }
+    }
+  };
+
+  const navigateToPreviousLesson = () => {
+    const allLessons = getAllLessons();
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    if (currentIndex > 0) {
+      const previousLesson = allLessons[currentIndex - 1];
+      if (isLessonAccessible(previousLesson.id)) {
+        setActiveLesson(previousLesson);
+      }
+    }
+  };
+
+  const handleQuizComplete = async (passed: boolean) => {
+    if (passed) {
+      const updatedFormation = await refreshFormationData();
+      
+      if (updatedFormation) {
+        navigateToNextLessonWithFormation(updatedFormation);
+      }
+    } 
+  };
+
+  // Function to refresh formation data (after quiz completion)
+  const refreshFormationData = async () => {
+    if (!token || !courseId) return null;
+    
+    try {
+      const data = await getFormationWithProgression(token, courseId);
+      setFormation(data);
+      setProgression(data.progression);
+      return data;
+    } catch (err) {
+      console.error('Error refreshing formation data:', err);
+      return null;
+    }
+  };
+
+  // Navigation function that uses provided formation data
+  const navigateToNextLessonWithFormation = (formationData: FormationWithProgression) => {
+    const allLessons = formationData.modules.flatMap(module => module.lessons);
+    
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    
+    if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      
+      // Vérifier si le module suivant est accessible dans les nouvelles données
+      const isNextLessonAccessible = formationData.modules.some(module => 
+        module.is_accessible !== false && module.lessons.some(lesson => lesson.id === nextLesson.id)
+      );
+      
+      if (isNextLessonAccessible) {
+        setActiveLesson(nextLesson);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -29,10 +118,11 @@ export function OnboardingPage() {
 
       try {
         setIsLoading(true);
-        const data = await getFormationDetails(token, courseId);
+        const data = await getFormationWithProgression(token, courseId);
         setFormation(data);
+        setProgression(data.progression);
 
-        // Automatically select the first lesson of the first module as active
+        // Automatically select the first lesson of the first accessible module as active
         if (data.modules.length > 0 && data.modules[0].lessons.length > 0) {
           setActiveLesson(data.modules[0].lessons[0]);
         } else {
@@ -85,12 +175,42 @@ export function OnboardingPage() {
           courseTitle={formation.title}
           modules={formation.modules}
           activeLessonId={activeLesson?.id}
-          onSelectLesson={setActiveLesson}
+<<<<<<< HEAD
+          onSelectLesson={(lesson) => {
+            if (isLessonAccessible(lesson.id)) {
+              setActiveLesson(lesson);
+            }
+          }}
+          progression={progression}
+>>>>>>> feat/generate_quizz
         />
         
         {/* Main Content (Center) */}
         <CourseContent
           lesson={activeLesson}
+<<<<<<< HEAD
+          onQuizComplete={handleQuizComplete}
+          onNextLesson={navigateToNextLesson}
+          onPreviousLesson={navigateToPreviousLesson}
+          canNavigateNext={() => {
+            const allLessons = getAllLessons();
+            const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+            if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+              const nextLesson = allLessons[currentIndex + 1];
+              return isLessonAccessible(nextLesson.id);
+            }
+            return false;
+          }}
+          canNavigatePrevious={() => {
+            const allLessons = getAllLessons();
+            const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+            if (currentIndex > 0) {
+              const previousLesson = allLessons[currentIndex - 1];
+              return isLessonAccessible(previousLesson.id);
+            }
+            return false;
+          }}
+>>>>>>> feat/generate_quizz
         />
 
         {/* Support Chat (Right) */}

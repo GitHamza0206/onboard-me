@@ -17,10 +17,34 @@ class ModuleStructure(BaseModel):
     title: str
     lessons: List[SubmoduleStructure] = Field(..., alias="lessons")
 
+class ModuleWithProgression(BaseModel):
+    id: str
+    title: str
+    lessons: List[SubmoduleStructure] = Field(..., alias="lessons")
+    is_accessible: bool = True
+
 class FormationStructureCreate(BaseModel):
     title: str
     has_content: bool = Field(default=False, alias="has_content")
     modules: List[ModuleStructure]
+
+class ProgressionSummary(BaseModel):
+    total_modules: int
+    accessible_modules_count: int
+    completed_modules: int
+    current_module_index: int
+    progress_percentage: int
+
+class FormationWithProgression(BaseModel):
+    title: str
+    has_content: bool = Field(default=False, alias="has_content")
+    modules: List[ModuleWithProgression]
+    progression: ProgressionSummary
+
+class FormationWithProgressionSummary(BaseModel):
+    id: int
+    nom: str
+    progression: ProgressionSummary
 
 # --- SCHÉMAS EXISTANTS ---
 

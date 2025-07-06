@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../auth/authContext";
 import { updateFormationContent } from "@/lib/api";
+import { injectQuizLessonsForAdmin, filterQuizFromFormation } from "@/utils/quizUtils";
 
 // Interfaces pour typer nos données
 interface LessonData {
@@ -16,6 +17,8 @@ interface LessonData {
   title: string;
   description: string;
   content: string; // Le contenu HTML de la leçon
+  type?: 'lesson' | 'quiz';
+  moduleId?: string;
 }
 
 interface ModuleData {
@@ -38,9 +41,20 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
   const { token } = useAuth();
 
   const [courseTitle, setCourseTitle] = useState(formation.title);
-  const [modules, setModules] = useState(formation.modules);
+  // Injecter les quiz dans les modules pour l'affichage
+  const [modules, setModules] = useState(injectQuizLessonsForAdmin(formation).modules);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
   const { toast } = useToast();
+
+  // Fonction pour obtenir le titre du module d'une leçon
+  const getModuleTitle = (lessonId: string): string => {
+    for (const module of modules) {
+      if (module.lessons.some(lesson => lesson.id === lessonId)) {
+        return module.title;
+      }
+    }
+    return '';
+  };
 
   // Au chargement, sélectionner la première leçon du premier module
   useEffect(() => {
@@ -72,14 +86,14 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
       return;
     }
 
-    // Construire l'objet de données complet à envoyer
-    const payload = {
+    // Filtrer les quiz avant la sauvegarde (on ne sauvegarde que les vraies leçons)
+    const formationToSave = filterQuizFromFormation({
       title: courseTitle,
       modules: modules,
-    };
+    });
 
     try {
-      await updateFormationContent(token, courseId, payload);
+      await updateFormationContent(token, courseId, formationToSave);
       toast({
         title: "✅ Formation Sauvegardée",
         description: "Vos modifications ont été enregistrées avec succès.",
@@ -106,6 +120,8 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
           // Fournir le contenu de la leçon active ou une chaîne vide
           content={activeLesson?.content || "<h1>Sélectionnez une leçon pour commencer.</h1>"}
           setContent={handleContentChange}
+          currentLesson={activeLesson}
+          moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
         />
         <SupportChat />
       </div>

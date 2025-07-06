@@ -4,8 +4,14 @@ import React, { useEffect } from "react";
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { LessonData } from "@/api/formations";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+<<<<<<< HEAD
+import { QuizComponent } from "./quiz/QuizComponent";
+import { useQuiz } from "@/hooks/useQuiz";
+import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+>>>>>>> feat/generate_quizz
 
 // --- Gardez tous vos imports et configurations Tiptap ici ---
 import StarterKit from '@tiptap/starter-kit';
@@ -63,9 +69,29 @@ const tiptapExtensions = [
 interface CourseContentProps {
   className?: string;
   lesson: LessonData | null;
+  onQuizComplete?: (passed: boolean) => void;
+  onNextLesson?: () => void;
+  onPreviousLesson?: () => void;
+  canNavigateNext?: () => boolean;
+  canNavigatePrevious?: () => boolean;
 }
 
-export function CourseContent({ className, lesson }: CourseContentProps) {
+<<<<<<< HEAD
+export function CourseContent({
+  className,
+  lesson,
+  onQuizComplete,
+  onNextLesson,
+  onPreviousLesson,
+  canNavigateNext = () => true,
+  canNavigatePrevious = () => true
+}: CourseContentProps) {
+  // Hook pour charger les quiz réels
+  const { quiz, quizId, loading, error, hasQuiz } = useQuiz(
+    lesson?.type === 'quiz' ? lesson.moduleId : undefined
+  );
+
+>>>>>>> feat/generate_quizz
   const editor = useEditor({
     editable: false,
     extensions: tiptapExtensions,
@@ -78,8 +104,7 @@ export function CourseContent({ className, lesson }: CourseContentProps) {
   });
 
   useEffect(() => {
-    if (!editor || !lesson) {
-      editor?.commands.setContent("");
+    if (!editor || !lesson || lesson.type === 'quiz') {
       return;
     }
     if (editor.getHTML() !== lesson.content) {
@@ -88,43 +113,90 @@ export function CourseContent({ className, lesson }: CourseContentProps) {
   }, [lesson, editor]);
 
   return (
-    // 1. THE PARENT CONTAINER
-    // This div must be a vertical flex column that can shrink.
     <div className={cn("flex-1 flex flex-col min-h-0 overflow-hidden bg-white", className)}>
-
-      {/* 2. THE SCROLLING CONTENT */}
-      {/* This div grows to fill the space and adds a scrollbar when its content is too tall. */}
-      <div className="flex-1 overflow-y-auto tiptap-editor">
+      <ScrollArea className="flex-1">
         <div className="max-w-4xl mx-auto p-8">
           {lesson ? (
-            <>
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-2">{lesson.title}</h1>
-              <p className="text-lg text-muted-foreground mb-8">{lesson.description}</p>
-              <EditorContent editor={editor} />
-            </>
+            lesson.type === 'quiz' ? (
+              // Render Quiz Component
+              <div className="py-4">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <p>Chargement du quiz...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">Erreur lors du chargement du quiz: {error}</p>
+                  </div>
+                ) : hasQuiz && quiz && quizId ? (
+                  <QuizComponent
+                    title={quiz.title}
+                    questions={quiz.questions}
+                    quizId={quizId}
+                    onComplete={(passed: boolean) => {
+                      if (onQuizComplete) {
+                        onQuizComplete(passed);
+                      }
+                    }}
+                    onRetry={() => {
+                      // Recharger la page pour recommencer le quiz
+                      window.location.reload();
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Aucun quiz disponible pour ce module.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Render regular lesson content using Tiptap
+              <>
+                <header>
+                  <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                    {lesson.title}
+                  </h1>
+                  <p className="mt-2 text-lg text-muted-foreground">
+                    {lesson.description}
+                  </p>
+                </header>
+                <Separator className="my-8" />
+                <main>
+                  <EditorContent editor={editor} />
+                </main>
+              </>
+            )
           ) : (
+            // Display a placeholder if no lesson is selected
             <div className="text-center py-20">
               <h1 className="text-2xl font-semibold">Bienvenue !</h1>
               <p className="mt-4 text-muted-foreground">
                 Sélectionnez une leçon pour commencer.
               </p>
             </div>
-          )}
+           )}
         </div>
-      </div>
-
-      {/* 3. THE FOOTER */}
-      {/* This footer has a fixed height and stays at the bottom. */}
-      <footer className="flex-shrink-0 border-t p-4 flex justify-between items-center">
-        <Button variant="outline" disabled={!lesson}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous Lesson
-        </Button>
-        <Button disabled={!lesson}>
-          Next Lesson
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </footer>
+      </ScrollArea>
+      {/* Footer for lesson navigation - hidden during quiz */}
+      {lesson && lesson.type !== 'quiz' && (
+        <footer className="flex-shrink-0 border-t p-4 flex justify-between items-center">
+          <Button 
+            variant="outline" 
+            disabled={!lesson || !canNavigatePrevious()}
+            onClick={onPreviousLesson}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Previous Lesson
+          </Button>
+          <Button 
+            disabled={!lesson || !canNavigateNext()}
+            onClick={onNextLesson}
+          >
+            Next Lesson
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </footer>
+      )}
     </div>
   );
 }
