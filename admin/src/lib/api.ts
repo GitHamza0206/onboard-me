@@ -39,13 +39,45 @@ export async function updateSubmodule(
   });
 }
 
+export async function deleteModule(token: string, id: number | string) {
+  const numericId = toNumeric(id);
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/modules/${numericId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to delete module");
+  }
+}
+
+export async function deleteSubmodule(token: string, id: number | string) {
+  const numericId = toNumeric(id);
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/submodules/${numericId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to delete lesson");
+  }
+}
+
 export async function updateFormationContent(
   token: string,
   formationId: string | number,
   formationData: any // Idéalement, utilisez une interface plus stricte ici
 ) {
   const numericId = toNumeric(formationId);
-  
+
   const response = await fetch(`${import.meta.env.VITE_API_URL}/formations/${numericId}/content`, {
     method: "PUT",
     headers: {
