@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
+    id: number;
     title: string;
     description: string;
     imageUrl: string;
     isRecommended?: boolean;
 }
 
-export function CourseCard({ title, description, imageUrl, isRecommended = false }: CourseCardProps) {
+export function CourseCard({ id, title, description, imageUrl, isRecommended = false }: CourseCardProps) {
     const navigate = useNavigate(); 
 
     const handleStartCourse = () => {
-        navigate(`/course-onboarding`); // Navigate to the course page
+        navigate(`/course-onboarding/${id}`);
     };
     
     if (isRecommended) {

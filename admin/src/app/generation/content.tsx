@@ -6,12 +6,19 @@ import { SupportChat } from "@/components/course/support-chat";
 import { HomeHeader } from "@/components/generation/HomeHeader";
 import { useToast } from "@/hooks/use-toast";
 
+import { useParams } from "react-router-dom";
+import { useAuth } from "../auth/authContext";
+import { updateFormationContent } from "@/lib/api";
+import { injectQuizLessonsForAdmin, filterQuizFromFormation } from "@/utils/quizUtils";
+
 // Interfaces pour typer nos données
 interface LessonData {
   id: string;
   title: string;
   description: string;
   content: string; // Le contenu HTML de la leçon
+  type?: 'lesson' | 'quiz';
+  moduleId?: string;
 }
 
 interface ModuleData {
@@ -30,10 +37,24 @@ interface OnboardingPageProps {
 }
 
 export function OnboardingPage({ formation }: OnboardingPageProps) {
+  const { courseId } = useParams(); // Obtenir l'ID du cours depuis l'URL
+  const { token } = useAuth();
+
   const [courseTitle, setCourseTitle] = useState(formation.title);
-  const [modules, setModules] = useState(formation.modules);
+  // Injecter les quiz dans les modules pour l'affichage
+  const [modules, setModules] = useState(injectQuizLessonsForAdmin(formation).modules);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
   const { toast } = useToast();
+
+  // Fonction pour obtenir le titre du module d'une leçon
+  const getModuleTitle = (lessonId: string): string => {
+    for (const module of modules) {
+      if (module.lessons.some(lesson => lesson.id === lessonId)) {
+        return module.title;
+      }
+    }
+    return '';
+  };
 
   // Au chargement, sélectionner la première leçon du premier module
   useEffect(() => {
@@ -49,33 +70,48 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
     setActiveLesson(prev => prev ? { ...prev, content: newContent } : null);
 
     // Mettre à jour l'état global des modules pour la sauvegarde éventuelle
-    setModules(currentModules => 
+    setModules(currentModules =>
       currentModules.map(module => ({
         ...module,
-        lessons: module.lessons.map(lesson => 
+        lessons: module.lessons.map(lesson =>
           lesson.id === activeLesson.id ? { ...lesson, content: newContent } : lesson
         )
       }))
     );
   };
 
-  const handleSave = () => {
-    // Ici, vous pourriez appeler une API pour sauvegarder les changements
-    // sur `courseTitle` et `modules` (qui contient le contenu mis à jour).
-    console.log("--- Sauvegarde de la formation ---");
-    console.log("Titre:", courseTitle);
-    console.log("Leçon active modifiée:", activeLesson);
-    toast({
-      title: "✅ Leçon Sauvegardée",
-      description: "Vos modifications ont été enregistrées avec succès.",
+  const handleSave = async () => {
+    if (!token || !courseId) {
+      toast({ variant: "destructive", title: "Erreur", description: "Non authentifié." });
+      return;
+    }
+
+    // Filtrer les quiz avant la sauvegarde (on ne sauvegarde que les vraies leçons)
+    const formationToSave = filterQuizFromFormation({
+      title: courseTitle,
+      modules: modules,
     });
+
+    try {
+      await updateFormationContent(token, courseId, formationToSave);
+      toast({
+        title: "✅ Formation Sauvegardée",
+        description: "Vos modifications ont été enregistrées avec succès.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de sauvegarde",
+        description: error.message,
+      });
+    }
   };
 
   return (
     <div className="flex h-screen bg-white text-gray-800 flex-col">
       <HomeHeader title={courseTitle} setTitle={setCourseTitle} onSave={handleSave} />
       <div className="flex-1 overflow-hidden flex">
-        <CourseNav 
+        <CourseNav
           modules={modules}
           activeLessonId={activeLesson?.id}
           onSelectLesson={setActiveLesson}
@@ -84,6 +120,8 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
           // Fournir le contenu de la leçon active ou une chaîne vide
           content={activeLesson?.content || "<h1>Sélectionnez une leçon pour commencer.</h1>"}
           setContent={handleContentChange}
+          currentLesson={activeLesson}
+          moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
         />
         <SupportChat />
       </div>

@@ -35,14 +35,23 @@ const router = createBrowserRouter([
           { path: "/home", element: <DashboardPage /> }, // Note : DashboardPage s'affichera dans le <Outlet> de MainLayout
         ],
       },
-            {
+      {
         element: (
           <ProtectedRoute>
             <BackLayout />
           </ProtectedRoute>
         ),
         children: [
-          { path: "/course-onboarding", element: <OnboardingPage /> },
+        ],
+      },
+      {
+        element: (
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        ),
+        children: [
+          { path: "/course-onboarding/:courseId", element: <Outlet /> },
         ],
       },
       { path: "/", element: <Navigate to="/home" replace /> },
