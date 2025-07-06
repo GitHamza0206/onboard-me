@@ -5,7 +5,7 @@ import { useAuth } from "@/app/auth/authContext";
 import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
-import { getFormationDetails, FormationData, LessonData } from "@/api/formations";
+import { getFormationWithProgression, FormationWithProgression, LessonData, ProgressionSummary } from "@/api/formations";
 import { BackHeader } from "@/components/layout/BackHeader"; // Import du header
 
 export function OnboardingPage() {
@@ -14,23 +14,39 @@ export function OnboardingPage() {
   const { token } = useAuth();
 
   // State for loading, error handling, and course data
-  const [formation, setFormation] = useState<FormationData | null>(null);
+  const [formation, setFormation] = useState<FormationWithProgression | null>(null);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progression, setProgression] = useState<ProgressionSummary | null>(null);
 
-  // Helper function to get all lessons in order
+  // Helper function to get all lessons in order from accessible modules
   const getAllLessons = (): LessonData[] => {
     if (!formation) return [];
     return formation.modules.flatMap(module => module.lessons);
   };
 
-  // Navigation functions
+  // Helper function to check if a lesson is accessible
+  const isLessonAccessible = (lessonId: string): boolean => {
+    if (!formation) return false;
+    
+    for (const module of formation.modules) {
+      if (module.is_accessible !== false && module.lessons.some(lesson => lesson.id === lessonId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Navigation functions with progression control
   const navigateToNextLesson = () => {
     const allLessons = getAllLessons();
     const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
     if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
-      setActiveLesson(allLessons[currentIndex + 1]);
+      const nextLesson = allLessons[currentIndex + 1];
+      if (isLessonAccessible(nextLesson.id)) {
+        setActiveLesson(nextLesson);
+      }
     }
   };
 
@@ -38,13 +54,78 @@ export function OnboardingPage() {
     const allLessons = getAllLessons();
     const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
     if (currentIndex > 0) {
-      setActiveLesson(allLessons[currentIndex - 1]);
+      const previousLesson = allLessons[currentIndex - 1];
+      if (isLessonAccessible(previousLesson.id)) {
+        setActiveLesson(previousLesson);
+      }
     }
   };
 
-  const handleQuizComplete = () => {
-    console.log('Quiz completed, moving to next lesson...');
-    navigateToNextLesson();
+  const handleQuizComplete = async (passed: boolean) => {
+    console.log('🎯 handleQuizComplete appelée, passed:', passed);
+    
+    if (passed) {
+      console.log('✅ Quiz réussi, rechargement de la formation...');
+      // Recharger la formation pour obtenir la progression mise à jour
+      const updatedFormation = await refreshFormationData();
+      
+      if (updatedFormation) {
+        console.log('📊 Formation rechargée, modules accessibles:', updatedFormation.modules.length);
+        // Utiliser directement les nouvelles données pour naviguer
+        navigateToNextLessonWithFormation(updatedFormation);
+      } else {
+        console.error('❌ Impossible de recharger la formation');
+      }
+    } else {
+      console.log('❌ Quiz échoué, pas de navigation');
+    }
+  };
+
+  // Function to refresh formation data (after quiz completion)
+  const refreshFormationData = async () => {
+    if (!token || !courseId) return null;
+    
+    try {
+      const data = await getFormationWithProgression(token, courseId);
+      setFormation(data);
+      setProgression(data.progression);
+      return data;
+    } catch (err) {
+      console.error('Error refreshing formation data:', err);
+      return null;
+    }
+  };
+
+  // Navigation function that uses provided formation data
+  const navigateToNextLessonWithFormation = (formationData: FormationWithProgression) => {
+    console.log('🧭 navigateToNextLessonWithFormation appelée');
+    const allLessons = formationData.modules.flatMap(module => module.lessons);
+    console.log('📋 Toutes les leçons:', allLessons.map(l => l.id));
+    console.log('🎯 Leçon active actuelle:', activeLesson?.id);
+    
+    const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+    console.log('📍 Index actuel:', currentIndex);
+    
+    if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      console.log('➡️ Prochaine leçon:', nextLesson.id, nextLesson.title);
+      
+      // Vérifier si le module suivant est accessible dans les nouvelles données
+      const isNextLessonAccessible = formationData.modules.some(module => 
+        module.is_accessible !== false && module.lessons.some(lesson => lesson.id === nextLesson.id)
+      );
+      
+      console.log('🔓 Prochaine leçon accessible?', isNextLessonAccessible);
+      
+      if (isNextLessonAccessible) {
+        console.log('✅ Navigation vers la prochaine leçon');
+        setActiveLesson(nextLesson);
+      } else {
+        console.log('❌ Prochaine leçon non accessible:', nextLesson.id);
+      }
+    } else {
+      console.log('🏁 Pas de leçon suivante ou index invalide');
+    }
   };
 
   useEffect(() => {
@@ -57,10 +138,17 @@ export function OnboardingPage() {
 
       try {
         setIsLoading(true);
-        const data = await getFormationDetails(token, courseId);
+        const data = await getFormationWithProgression(token, courseId);
+        console.log('🔍 Formation récupérée avec progression:', data);
+        console.log('📋 Modules avec accessibilité:', data.modules.map(m => ({
+          id: m.id,
+          title: m.title,
+          is_accessible: m.is_accessible
+        })));
         setFormation(data);
+        setProgression(data.progression);
 
-        // Automatically select the first lesson of the first module as active
+        // Automatically select the first lesson of the first accessible module as active
         if (data.modules.length > 0 && data.modules[0].lessons.length > 0) {
           setActiveLesson(data.modules[0].lessons[0]);
         } else {
@@ -113,7 +201,12 @@ export function OnboardingPage() {
           courseTitle={formation.title}
           modules={formation.modules}
           activeLessonId={activeLesson?.id}
-          onSelectLesson={setActiveLesson}
+          onSelectLesson={(lesson) => {
+            if (isLessonAccessible(lesson.id)) {
+              setActiveLesson(lesson);
+            }
+          }}
+          progression={progression}
         />
         
         {/* Main Content (Center) */}
@@ -122,6 +215,24 @@ export function OnboardingPage() {
           onQuizComplete={handleQuizComplete}
           onNextLesson={navigateToNextLesson}
           onPreviousLesson={navigateToPreviousLesson}
+          canNavigateNext={() => {
+            const allLessons = getAllLessons();
+            const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+            if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+              const nextLesson = allLessons[currentIndex + 1];
+              return isLessonAccessible(nextLesson.id);
+            }
+            return false;
+          }}
+          canNavigatePrevious={() => {
+            const allLessons = getAllLessons();
+            const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
+            if (currentIndex > 0) {
+              const previousLesson = allLessons[currentIndex - 1];
+              return isLessonAccessible(previousLesson.id);
+            }
+            return false;
+          }}
         />
 
         {/* Support Chat (Right) */}

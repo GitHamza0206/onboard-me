@@ -4,6 +4,7 @@ import { useAuth } from '@/app/auth/authContext';
 
 interface UseQuizResult {
   quiz: any | null;
+  quizId: number | null;
   loading: boolean;
   error: string | null;
   hasQuiz: boolean;
@@ -11,6 +12,7 @@ interface UseQuizResult {
 
 export function useQuiz(moduleId: string | undefined): UseQuizResult {
   const [quiz, setQuiz] = useState<any | null>(null);
+  const [quizId, setQuizId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
@@ -18,6 +20,7 @@ export function useQuiz(moduleId: string | undefined): UseQuizResult {
   useEffect(() => {
     if (!moduleId || !token) {
       setQuiz(null);
+      setQuizId(null);
       setLoading(false);
       setError(null);
       return;
@@ -33,13 +36,16 @@ export function useQuiz(moduleId: string | undefined): UseQuizResult {
         if (quizData) {
           const formattedQuiz = convertQuizToComponentFormat(quizData);
           setQuiz(formattedQuiz);
+          setQuizId(quizData.id);
         } else {
           setQuiz(null);
+          setQuizId(null);
         }
       } catch (err) {
         console.error('Error loading quiz:', err);
         setError(err instanceof Error ? err.message : 'Failed to load quiz');
         setQuiz(null);
+        setQuizId(null);
       } finally {
         setLoading(false);
       }
@@ -50,6 +56,7 @@ export function useQuiz(moduleId: string | undefined): UseQuizResult {
 
   return {
     quiz,
+    quizId,
     loading,
     error,
     hasQuiz: quiz !== null

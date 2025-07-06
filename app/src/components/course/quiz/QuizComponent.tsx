@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, XCircle, Trophy, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, Trophy, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '@/app/auth/authContext';
+import { submitQuiz, convertQuizAnswersToSubmission, QuizResult } from '@/api/quiz';
 
 interface QuizAnswer {
   id: string;
@@ -22,20 +24,26 @@ interface QuizQuestion {
 interface QuizComponentProps {
   title: string;
   questions: QuizQuestion[];
-  onComplete: () => void;
+  quizId: number;
+  onComplete: (passed: boolean) => void;
   onRetry?: () => void;
 }
 
 export const QuizComponent: React.FC<QuizComponentProps> = ({
   title,
   questions,
+  quizId,
   onComplete,
   onRetry
 }) => {
+  const { token } = useAuth();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string[] }>({});
   const [showResults, setShowResults] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
@@ -43,7 +51,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   const handleAnswerSelect = (answerId: string) => {
     setSelectedAnswers(prev => ({
       ...prev,
-      [currentQuestion.id]: answerId
+      [currentQuestion.id]: [answerId] // Convertir en array pour supporter les questions à choix multiples
     }));
   };
 
@@ -55,40 +63,57 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
     }
   };
 
-  const handleShowResults = () => {
-    const correctAnswers = questions.filter(question => {
-      const selectedAnswerId = selectedAnswers[question.id];
-      const selectedAnswer = question.answers.find(a => a.id === selectedAnswerId);
-      return selectedAnswer?.isCorrect;
-    });
+  const handleShowResults = async () => {
+    if (!token) {
+      setSubmitError("Token d'authentification manquant");
+      return;
+    }
 
-    const score = (correctAnswers.length / questions.length) * 100;
-    const passed = score >= 70; // 70% pour réussir
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    setQuizCompleted(true);
-    
-    // Si réussi, on peut passer à la suite
-    if (passed) {
-      setTimeout(() => {
-        onComplete();
-      }, 2000);
+    try {
+      // Convertir les réponses au format API
+      const submissionData = convertQuizAnswersToSubmission(quizId, selectedAnswers);
+      console.log('Soumission du quiz avec les données:', submissionData);
+      
+      // Soumettre le quiz à l'API
+      const result = await submitQuiz(token, submissionData);
+      console.log('Résultat du quiz reçu:', result);
+      
+      setQuizResult(result);
+      setQuizCompleted(true);
+      setShowResults(true);
+      
+      // Ne pas appeler automatiquement onComplete - laisser l'utilisateur cliquer sur "Continuer"
+      
+    } catch (error: any) {
+      console.error('Erreur lors de la soumission du quiz:', error);
+      setSubmitError(error.message || "Erreur lors de la soumission du quiz");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const calculateScore = () => {
+    if (quizResult) {
+      return quizResult.percentage;
+    }
+    // Calcul local pour l'affichage avant soumission
     const correctAnswers = questions.filter(question => {
-      const selectedAnswerId = selectedAnswers[question.id];
-      const selectedAnswer = question.answers.find(a => a.id === selectedAnswerId);
+      const selectedAnswerIds = selectedAnswers[question.id];
+      if (!selectedAnswerIds || selectedAnswerIds.length === 0) return false;
+      const selectedAnswer = question.answers.find(a => a.id === selectedAnswerIds[0]);
       return selectedAnswer?.isCorrect;
     });
     return (correctAnswers.length / questions.length) * 100;
   };
 
-  const isAnswerSelected = selectedAnswers[currentQuestion?.id];
+  const isAnswerSelected = selectedAnswers[currentQuestion?.id] && selectedAnswers[currentQuestion?.id].length > 0;
 
   if (showResults) {
     const score = calculateScore();
-    const passed = score >= 70;
+    const passed = quizResult ? quizResult.passed : score >= 70;
 
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -103,6 +128,11 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
           <CardTitle className="text-2xl">
             {passed ? 'Félicitations !' : 'Résultats du Quiz'}
           </CardTitle>
+          {quizResult && (
+            <p className="text-sm text-gray-600 mt-2">
+              {quizResult.message}
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="text-center">
@@ -110,20 +140,31 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
               {Math.round(score)}%
             </div>
             <div className="text-gray-600">
-              {questions.filter(q => {
-                const selectedAnswerId = selectedAnswers[q.id];
-                const selectedAnswer = q.answers.find(a => a.id === selectedAnswerId);
-                return selectedAnswer?.isCorrect;
-              }).length} / {questions.length} bonnes réponses
+              {quizResult ? (
+                `${quizResult.score} / ${quizResult.max_score} points`
+              ) : (
+                `${questions.filter(q => {
+                  const selectedAnswerIds = selectedAnswers[q.id];
+                  if (!selectedAnswerIds || selectedAnswerIds.length === 0) return false;
+                  const selectedAnswer = q.answers.find(a => a.id === selectedAnswerIds[0]);
+                  return selectedAnswer?.isCorrect;
+                }).length} / ${questions.length} bonnes réponses`
+              )}
             </div>
+            {quizResult && (
+              <div className="text-sm text-gray-500 mt-1">
+                Tentative {quizResult.attempt_number} / {quizResult.max_attempts}
+              </div>
+            )}
           </div>
 
           <Progress value={score} className="w-full" />
 
           <div className="space-y-4">
             {questions.map((question, index) => {
-              const selectedAnswerId = selectedAnswers[question.id];
-              const selectedAnswer = question.answers.find(a => a.id === selectedAnswerId);
+              const selectedAnswerIds = selectedAnswers[question.id];
+              const selectedAnswerId = selectedAnswerIds && selectedAnswerIds.length > 0 ? selectedAnswerIds[0] : null;
+              const selectedAnswer = selectedAnswerId ? question.answers.find(a => a.id === selectedAnswerId) : null;
               const isCorrect = selectedAnswer?.isCorrect;
 
               return (
@@ -139,11 +180,16 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
                         Question {index + 1}: {question.question}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        Votre réponse: {selectedAnswer?.text}
+                        Votre réponse: {selectedAnswer?.text || "Aucune réponse"}
                       </div>
                       {!isCorrect && (
                         <div className="text-sm text-green-600 mt-1">
                           Bonne réponse: {question.answers.find(a => a.isCorrect)?.text}
+                        </div>
+                      )}
+                      {question.explanation && (
+                        <div className="text-sm text-blue-600 mt-2 italic">
+                          {question.explanation}
                         </div>
                       )}
                     </div>
@@ -153,19 +199,27 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
             })}
           </div>
 
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600 text-sm">{submitError}</p>
+            </div>
+          )}
+
           <div className="flex justify-center space-x-4">
             {passed ? (
-              <Button onClick={onComplete} className="px-8">
+              <Button onClick={() => {
+                console.log('Bouton Continuer cliqué, quiz réussi');
+                onComplete(true);
+              }} className="px-8">
                 Continuer <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
               <div className="space-x-4">
-                <Button variant="outline" onClick={onRetry}>
-                  Recommencer
-                </Button>
-                <Button onClick={onComplete}>
-                  Continuer quand même
-                </Button>
+                {onRetry && (
+                  <Button variant="outline" onClick={onRetry}>
+                    Recommencer
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -191,7 +245,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
         </div>
 
         <RadioGroup
-          value={selectedAnswers[currentQuestion.id] || ''}
+          value={selectedAnswers[currentQuestion.id] && selectedAnswers[currentQuestion.id].length > 0 ? selectedAnswers[currentQuestion.id][0] : ''}
           onValueChange={handleAnswerSelect}
           className="space-y-3"
         >
@@ -201,7 +255,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
               <Label 
                 htmlFor={answer.id} 
                 className={`flex-1 cursor-pointer p-3 rounded-lg border transition-colors ${
-                  selectedAnswers[currentQuestion.id] === answer.id
+                  selectedAnswers[currentQuestion.id] && selectedAnswers[currentQuestion.id].includes(answer.id)
                     ? 'bg-blue-50 border-blue-200'
                     : 'hover:bg-gray-50'
                 }`}
@@ -229,9 +283,16 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
           
           <Button
             onClick={isLastQuestion ? handleShowResults : handleNext}
-            disabled={!isAnswerSelected}
+            disabled={!isAnswerSelected || isSubmitting}
           >
-            {isLastQuestion ? 'Voir les résultats' : 'Suivant'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Soumission...
+              </>
+            ) : (
+              isLastQuestion ? 'Voir les résultats' : 'Suivant'
+            )}
           </Button>
         </div>
       </CardContent>

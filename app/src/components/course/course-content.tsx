@@ -67,9 +67,11 @@ const tiptapExtensions = [
 interface CourseContentProps {
   className?: string;
   lesson: LessonData | null;
-  onQuizComplete?: () => void;
+  onQuizComplete?: (passed: boolean) => void;
   onNextLesson?: () => void;
   onPreviousLesson?: () => void;
+  canNavigateNext?: () => boolean;
+  canNavigatePrevious?: () => boolean;
 }
 
 export function CourseContent({
@@ -77,10 +79,12 @@ export function CourseContent({
   lesson,
   onQuizComplete,
   onNextLesson,
-  onPreviousLesson
+  onPreviousLesson,
+  canNavigateNext = () => true,
+  canNavigatePrevious = () => true
 }: CourseContentProps) {
   // Hook pour charger les quiz réels
-  const { quiz, loading, error, hasQuiz } = useQuiz(
+  const { quiz, quizId, loading, error, hasQuiz } = useQuiz(
     lesson?.type === 'quiz' ? lesson.moduleId : undefined
   );
 
@@ -120,21 +124,21 @@ export function CourseContent({
                   <div className="text-center py-8">
                     <p className="text-red-500">Erreur lors du chargement du quiz: {error}</p>
                   </div>
-                ) : hasQuiz && quiz ? (
+                ) : hasQuiz && quiz && quizId ? (
                   <QuizComponent
                     title={quiz.title}
                     questions={quiz.questions}
-                    onComplete={() => {
-                      console.log('Quiz completed for:', lesson.title);
+                    quizId={quizId}
+                    onComplete={(passed: boolean) => {
+                      console.log('Quiz completed for:', lesson.title, 'passed:', passed);
                       if (onQuizComplete) {
-                        onQuizComplete();
-                      }
-                      if (onNextLesson) {
-                        onNextLesson();
+                        onQuizComplete(passed);
                       }
                     }}
                     onRetry={() => {
                       console.log('Quiz retry for:', lesson.title);
+                      // Recharger la page pour recommencer le quiz
+                      window.location.reload();
                     }}
                   />
                 ) : (
@@ -174,16 +178,16 @@ export function CourseContent({
       {/* Footer for lesson navigation - hidden during quiz */}
       {lesson && lesson.type !== 'quiz' && (
         <footer className="flex-shrink-0 border-t p-4 flex justify-between items-center">
-          <Button
-            variant="outline"
-            disabled={!lesson}
+          <Button 
+            variant="outline" 
+            disabled={!lesson || !canNavigatePrevious()}
             onClick={onPreviousLesson}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Previous Lesson
           </Button>
-          <Button
-            disabled={!lesson}
+          <Button 
+            disabled={!lesson || !canNavigateNext()}
             onClick={onNextLesson}
           >
             Next Lesson

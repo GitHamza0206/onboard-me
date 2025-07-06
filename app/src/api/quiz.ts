@@ -29,6 +29,27 @@ export interface Quiz {
   questions: QuizQuestion[];
 }
 
+export interface QuizSubmissionAnswer {
+  question_id: number;
+  selected_answer_ids: number[];
+}
+
+export interface QuizSubmissionData {
+  quiz_id: number;
+  answers: QuizSubmissionAnswer[];
+}
+
+export interface QuizResult {
+  score: number;
+  max_score: number;
+  percentage: number;
+  passed: boolean;
+  passing_score: number;
+  attempt_number: number;
+  max_attempts: number;
+  message: string;
+}
+
 /**
  * Récupère le quiz d'un module spécifique
  */
@@ -96,6 +117,36 @@ export async function getFormationQuizzes(
 }
 
 /**
+ * Soumet les réponses d'un quiz
+ */
+export async function submitQuiz(
+  token: string,
+  submissionData: QuizSubmissionData
+): Promise<QuizResult> {
+  try {
+    const response = await fetch(`${apiUrl}/quiz/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(submissionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to submit quiz: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+    throw error;
+  }
+}
+
+/**
  * Convertit un quiz de l'API vers le format attendu par QuizComponent
  */
 export function convertQuizToComponentFormat(quiz: Quiz) {
@@ -115,5 +166,25 @@ export function convertQuizToComponentFormat(quiz: Quiz) {
           })),
         explanation: question.explanation
       }))
+  };
+}
+
+/**
+ * Convertit les réponses du QuizComponent vers le format API
+ */
+export function convertQuizAnswersToSubmission(
+  quizId: number,
+  userAnswers: { [questionId: string]: string[] }
+): QuizSubmissionData {
+  const answers: QuizSubmissionAnswer[] = Object.entries(userAnswers).map(
+    ([questionId, selectedAnswerIds]) => ({
+      question_id: parseInt(questionId),
+      selected_answer_ids: selectedAnswerIds.map(id => parseInt(id))
+    })
+  );
+
+  return {
+    quiz_id: quizId,
+    answers
   };
 }
