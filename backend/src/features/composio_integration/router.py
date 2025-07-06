@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
-from composio.client.exceptions import HTTPError
 from src.features.auth.dependencies import get_current_user
-from src.composio_client import composio, TOOLKIT_AUTH_CONFIGS, COMPOSIO_NOTION_AUTH_CONFIG_ID
+from src.composio_client import composio, TOOLKIT_AUTH_CONFIGS
 import os
 import httpx
 

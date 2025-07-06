@@ -12,7 +12,7 @@ from src.features.admin.router import router as admin_router
 from src.features.formations.router import router as formations_router
 from src.features.documents.router import router as documents_router 
 from src.features.creator_agent.router import router as creator_agent_router
-from src.features.composio.router import router as composio_router
+from src.features.composio_integration.router import router as composio_router
 import os
 from dotenv import load_dotenv
 
