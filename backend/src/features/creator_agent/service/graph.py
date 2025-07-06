@@ -5,6 +5,7 @@ from .state import State
 from langgraph.checkpoint.memory import MemorySaver
 from .nodes.tools import tool_node
 from langchain_core.messages import BaseMessage
+from .nodes.create_structure import create_structure
 
 workflow = StateGraph(State)
 memory = MemorySaver()
@@ -14,6 +15,7 @@ memory = MemorySaver()
 # ===========================================
 workflow.add_node("ingest_knowledge", ingest_knowledge)
 workflow.add_node("generate", generate)
+workflow.add_node("create_structure", create_structure)
 workflow.add_node("tools", tool_node)
 
 # ===========================================
@@ -21,6 +23,15 @@ workflow.add_node("tools", tool_node)
 # ===========================================
 workflow.add_edge(START, "ingest_knowledge")
 workflow.add_edge("ingest_knowledge", "generate")
+
+def should_create_structure(state: State) -> str:
+    """Return 'create_structure' if the agent should create a structure, otherwise return END."""
+    return "create_structure" if state.get("confidence_score") >= 8 else END
+
+workflow.add_conditional_edges("generate", 
+                               should_create_structure,
+                               )
+workflow.add_edge("create_structure", END)
 
 def should_continue(state: State) -> str:
     """Return 'tools' if the agent should call tools, otherwise return END."""
@@ -32,12 +43,6 @@ def should_continue(state: State) -> str:
         return "tools"
     return END
 
-workflow.add_conditional_edges(
-    "generate",
-    should_continue,
-    {"tools": "tools", END: END},
-)
-workflow.add_edge("tools", "generate")
 
 # Compile
 graph = workflow.compile(checkpointer=memory)

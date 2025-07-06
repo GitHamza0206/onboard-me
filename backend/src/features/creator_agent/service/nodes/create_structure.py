@@ -73,7 +73,7 @@ Do not add any explanations or introductory text before or after the JSON object
 chain = structure_prompt | llm | JsonOutputParser()
 
 def create_structure(state: State) -> State:
-    query = "\n".join([f"{m.type}: {m.content}" for m in state.messages])
+    query = "\n".join([f"{m.type}: {m.content}" for m in state.get("messages", [])])
     structure_json = chain.invoke({"query": query})           # ← génère la structure
     print(f"Generated structure: {structure_json}")
     
