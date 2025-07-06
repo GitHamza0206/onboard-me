@@ -5,6 +5,7 @@ import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
 import { HomeHeader } from "@/components/generation/HomeHeader";
 import { useToast } from "@/hooks/use-toast";
+import { useContentStreaming } from "@/hooks/useContentStreaming";
 
 import { useParams } from "react-router-dom";
 import { useAuth } from "../auth/authContext";
@@ -16,7 +17,7 @@ interface LessonData {
   id: string;
   title: string;
   description: string;
-  content: string; // Le contenu HTML de la leçon
+  content?: string | null; // Le contenu HTML de la leçon (optional to handle loading states)
   type?: 'lesson' | 'quiz';
   moduleId?: string;
 }
@@ -45,14 +46,15 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
   // Injecter les quiz dans les modules pour l'affichage
   const [modules, setModules] = useState(injectQuizLessonsForAdmin(formation).modules);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+
+  // Initialize streaming hook
+  const streaming = useContentStreaming(token, apiUrl);
 
   // Function to refresh course data
   const refreshCourseData = async () => {
-    if (!courseId || !token || isRefreshing) return;
+    if (!courseId || !token) return;
 
-    setIsRefreshing(true);
     try {
       const res = await fetch(`${apiUrl}/formations/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -75,22 +77,66 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
       }
     } catch (error: any) {
       console.error("Failed to refresh course data:", error);
-    } finally {
-      setIsRefreshing(false);
+      toast({
+        variant: "destructive",
+        title: "Erreur de mise à jour",
+        description: "Impossible de récupérer les dernières données du cours",
+      });
     }
   };
 
-  // Auto-refresh every 5 seconds if there are lessons with empty content
+  // Start streaming if content generation is needed
   useEffect(() => {
     const hasEmptyLessons = modules.some(module => 
       module.lessons.some(lesson => !lesson.content || lesson.content.trim() === '')
     );
 
-    if (hasEmptyLessons) {
-      const interval = setInterval(refreshCourseData, 5000);
-      return () => clearInterval(interval);
+    // Start streaming only if there are empty lessons and streaming isn't already active
+    if (hasEmptyLessons && !streaming.progress.isGenerating && !streaming.isConnected) {
+      // Show toast to inform user
+      toast({
+        title: "Génération de contenu",
+        description: "Démarrage de la génération automatique du contenu...",
+      });
+      
+      // Start streaming with the formation structure
+      streaming.startStreaming(formation);
     }
-  }, [modules, courseId, token, isRefreshing]);
+  }, [formation, modules, streaming, toast]);
+
+  // Auto-refresh data when streaming completes
+  useEffect(() => {
+    if (streaming.progress.isCompleted) {
+      toast({
+        title: "✅ Génération terminée",
+        description: "Tout le contenu du cours a été généré avec succès!",
+      });
+      
+      // Refresh course data to get the updated content
+      refreshCourseData();
+    }
+  }, [streaming.progress.isCompleted]);
+
+  // Show progress messages
+  useEffect(() => {
+    if (streaming.progress.currentLesson) {
+      toast({
+        title: "📚 Leçon générée",
+        description: `${streaming.progress.currentLesson.title} (${streaming.progress.currentLesson.progress})`,
+      });
+    }
+  }, [streaming.progress.currentLesson]);
+
+  // Show errors
+  useEffect(() => {
+    if (streaming.progress.error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de génération",
+        description: streaming.progress.error,
+      });
+    }
+  }, [streaming.progress.error]);
 
   // Fonction pour obtenir le titre du module d'une leçon
   const getModuleTitle = (lessonId: string): string => {
@@ -159,9 +205,34 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
         title={courseTitle} 
         setTitle={setCourseTitle} 
         onSave={handleSave}
-        isRefreshing={isRefreshing}
+        isRefreshing={streaming.progress.isGenerating}
         onRefresh={refreshCourseData}
       />
+      {/* Streaming Progress Bar */}
+      {streaming.progress.isGenerating && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 animate-spin text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-blue-700 font-medium">
+                Génération en cours...
+              </span>
+              {streaming.progress.currentLesson && (
+                <span className="text-blue-600">
+                  {streaming.progress.currentLesson.title}
+                </span>
+              )}
+            </div>
+            {streaming.progress.completedLessons !== undefined && streaming.progress.totalLessons && (
+              <div className="text-blue-600">
+                {streaming.progress.completedLessons}/{streaming.progress.totalLessons} leçons
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-hidden flex">
         <CourseNav
           modules={modules}

@@ -49,8 +49,9 @@ export default function GenerationEntryPage() {
   if (loading) return <p className="p-8">Chargement…</p>;
   if (error) return <p className="p-8 text-destructive">{error}</p>;
 
-  // 👇 3. Passer la formation en prop si elle existe et a du contenu
-  return formation && formation.has_content
+  // 👇 3. Show OnboardingPage if formation exists (with or without content)
+  // Show StructurePage only if no formation exists yet
+  return formation 
     ? <OnboardingPage formation={formation} />
     : <StructurePage />;
 }

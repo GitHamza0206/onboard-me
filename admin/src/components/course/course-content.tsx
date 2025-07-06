@@ -100,7 +100,7 @@ const extractHtmlFromMarkdown = (content: string): string => {
 };
 
 // Check if lesson content is empty or just placeholder
-const isContentEmpty = (content: string | null): boolean => {
+const isContentEmpty = (content: string | null | undefined): boolean => {
   if (!content) return true;
   
   const trimmed = content.trim();

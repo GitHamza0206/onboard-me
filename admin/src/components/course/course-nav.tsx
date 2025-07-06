@@ -18,6 +18,7 @@ import { isQuizLesson } from "@/utils/quizUtils";
 interface LessonData { 
   id: string; 
   title: string; 
+  description: string; // Required description field to match content.tsx interface
   type?: 'lesson' | 'quiz';
   content?: string | null; // Add content field to check if lesson is generated
 }
