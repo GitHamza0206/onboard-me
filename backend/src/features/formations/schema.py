@@ -10,6 +10,7 @@ class SubmoduleStructure(BaseModel):
     id: str
     title: str
     description: str
+    content: Optional[str] = ""
 
 class ModuleStructure(BaseModel):
     id: str
@@ -39,3 +40,4 @@ class SubmoduleUpdate(BaseModel):
     titre: str | None = None
     description: str | None = None
     index: int | None = None
+    content: Optional[str] = None

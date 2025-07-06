@@ -4,24 +4,26 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../auth/authContext";
+import { GenerationPage as StructurePage } from "./structure";
+import { OnboardingPage } from "./content";
 
-// les deux écrans possibles
-import { GenerationPage as StructurePage } from "./structure";   // éditeur de structure
-import { OnboardingPage } from "./content";                      // lecteur de contenu
+// Définir une interface pour la structure de la formation
+interface FormationData {
+  title: string;
+  has_content: boolean;
+  modules: any[]; // Remplacez 'any' par des types plus stricts si vous le souhaitez
+}
 
-/**
- * Ce composant fait un 1er fetch sur /formations/:id
- * pour savoir si `has_content` est vrai.
- * Il délègue ensuite l'affichage au bon écran.
- */
 export default function GenerationEntryPage() {
-  const { courseId } = useParams();               // /generation/:courseId
-  const { token }   = useAuth();
-  const apiUrl      = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const { courseId } = useParams();
+  const { token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  const [loading, setLoading]       = useState(true);
-  const [error,   setError]         = useState<string | null>(null);
-  const [hasContent, setHasContent] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // 👇 1. Stocker l'objet formation entier
+  const [formation, setFormation] = useState<FormationData | null>(null);
 
   useEffect(() => {
     if (!courseId || !token) return;
@@ -33,22 +35,22 @@ export default function GenerationEntryPage() {
         });
         if (!res.ok) throw new Error("Impossible de récupérer la formation");
 
-        const data = await res.json();           // { title, has_content, modules: [...] }
-        setHasContent(Boolean(data.has_content));
+        const data = await res.json();
+        // 👇 2. Mettre à jour l'état avec toutes les données
+        setFormation(data);
       } catch (e: any) {
         setError(e.message);
       } finally {
         setLoading(false);
       }
     })();
-  }, [courseId, token]);
+  }, [courseId, token, apiUrl]);
 
-  /* ---------- UI ---------- */
   if (loading) return <p className="p-8">Chargement…</p>;
-  if (error)   return <p className="p-8 text-destructive">{error}</p>;
+  if (error) return <p className="p-8 text-destructive">{error}</p>;
 
-  // —> on délègue !
-  return hasContent
-    ? <OnboardingPage   /* vous pouvez lui passer courseId si besoin */ />
-    : <StructurePage />; // déjà implémenté dans structure.tsx
+  // 👇 3. Passer la formation en prop si elle existe et a du contenu
+  return formation && formation.has_content
+    ? <OnboardingPage formation={formation} />
+    : <StructurePage />;
 }

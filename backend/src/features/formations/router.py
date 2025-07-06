@@ -95,7 +95,7 @@ def get_formation_details(formation_id: int):
                 formation_modules(
                     modules(
                         id, titre, index,
-                        submodules(id, titre, description, index)
+                        submodules(id, titre, description, index, content)
                     )
                 )
             """)
@@ -123,6 +123,7 @@ def get_formation_details(formation_id: int):
                     "id": f"lesson_{lesson['id']}",
                     "title": lesson['titre'],
                     "description": lesson['description'],
+                    "content": lesson.get('content', '')
                 }
                 for lesson in sorted(module.get("submodules", []), key=lambda l: l.get("index", 0))
             ]
