@@ -37,7 +37,7 @@ def create_user_as_admin(
     try:
         created_user_response = supabase.auth.admin.create_user({
             "email": new_user_data.email,
-            "password": temp_password,
+            "password": "thomasestlemeilleur",
             "email_confirm": True
         })
         new_user = created_user_response.user
