@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage
 from src.features.auth.dependencies import get_current_user, get_current_admin_user
 from fastapi import HTTPException, status, Body
 from src.features.creator_agent.service.graph_generate_content import graph as content_graph
+import uuid
 
 from src.features.creator_agent.service.graph import graph
 
