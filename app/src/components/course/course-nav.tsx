@@ -37,6 +37,9 @@ export function CourseNav({
       if (parentModule) {
         setOpenModuleId(parentModule.id);
       }
+    } else if (modules.length > 0) {
+      // Open the first module by default if no lesson is active
+      setOpenModuleId(modules[0].id);
     }
   }, [activeLessonId, modules]);
 
@@ -56,8 +59,8 @@ export function CourseNav({
             onValueChange={setOpenModuleId}
           >
             {modules.map((module) => (
-              <AccordionItem value={module.id} key={module.id}>
-                <AccordionTrigger className="text-sm font-semibold hover:no-underline p-2">
+              <AccordionItem value={module.id} key={module.id} className="border-b-0">
+                <AccordionTrigger className="text-sm font-semibold hover:no-underline p-2 text-left">
                   {module.title}
                 </AccordionTrigger>
                 <AccordionContent>
@@ -66,12 +69,15 @@ export function CourseNav({
                       const isQuiz = lesson.type === 'quiz';
                       return (
                         <li key={lesson.id}>
-                          <button
+                          <div
+                            role="button"
+                            tabIndex={0}
                             onClick={() => onSelectLesson(lesson)}
+                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectLesson(lesson)}
                             className={cn(
-                              "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm",
+                              "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm cursor-pointer",
                               lesson.id === activeLessonId
-                                ? isQuiz 
+                                ? isQuiz
                                   ? "bg-orange-50 text-orange-700 font-medium border border-orange-200"
                                   : "bg-primary/10 text-primary font-medium"
                                 : isQuiz
@@ -82,7 +88,7 @@ export function CourseNav({
                             {isQuiz ? (
                               <HelpCircle
                                 className={cn(
-                                  "w-3 h-3",
+                                  "w-3 h-3 shrink-0",
                                   lesson.id === activeLessonId
                                     ? "text-orange-700"
                                     : "text-orange-500"
@@ -91,7 +97,7 @@ export function CourseNav({
                             ) : (
                               <Circle
                                 className={cn(
-                                  "w-2 h-2",
+                                  "w-2 h-2 shrink-0",
                                   lesson.id === activeLessonId
                                     ? "text-primary"
                                     : "text-gray-400"
@@ -99,10 +105,10 @@ export function CourseNav({
                                 fill="currentColor"
                               />
                             )}
-                            <span className={isQuiz ? "font-medium" : ""}>
+                            <span className={cn("truncate", isQuiz ? "font-medium" : "")}>
                               {lesson.title}
                             </span>
-                          </button>
+                          </div>
                         </li>
                       );
                     })}
