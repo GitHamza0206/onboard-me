@@ -6,10 +6,8 @@ from shared.llm import llm
 
 import re
 
-agent_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
+agent_prompt = ChatPromptTemplate.from_template(
+   
             """You are the Creator Agent, an expert instructional designer and knowledge architect. 
 Your primary role is to help administrators transform raw, unstructured company content (like documents, videos, and notes) into clear, structured, and effective learning courses for employees.
 
@@ -22,11 +20,15 @@ You have access to a variety of tools to help you. You can connect to external s
 3.  **Synthesize and Structure**: Once you have the necessary information, proceed with your core task of structuring the learning content.
 4.  **Collaborate**: Present your findings and proposals to the admin. Be ready to explain your choices and adapt to feedback.
 
+
 If you need to use a tool, the system will call it and provide you with the results in the next turn.
-""",
-        ),
-        ("placeholder", "{messages}"),
-    ]
+
+Here is the content you have access to:
+{knowledge}
+
+Here is the user's request:
+{messages}
+"""
 )
 
 # The agent chain.
@@ -50,7 +52,8 @@ def generate(state: State) -> State:
     It can either respond to the user directly or decide to call one or more tools.
     """
     messages = state.messages
-    response = chain.invoke({"messages": messages})
+    knowledge = state.knowledge
+    response = chain.invoke({"messages": messages, "knowledge": knowledge})
 
     # We are not calculating confidence score here anymore as the agent might be calling tools.
     # The decision to create a structure is now handled in the graph's conditional edge.
