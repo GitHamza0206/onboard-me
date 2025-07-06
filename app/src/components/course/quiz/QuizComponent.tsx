@@ -75,8 +75,11 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
     try {
       // Convertir les réponses au format API
       const submissionData = convertQuizAnswersToSubmission(quizId, selectedAnswers);
-      const response = await submitQuiz(quizId, submissionData);
-      const result = await response.json();
+      console.log('Soumission du quiz avec les données:', submissionData);
+      
+      // Soumettre le quiz à l'API
+      const result = await submitQuiz(token, submissionData);
+      console.log('Résultat du quiz reçu:', result);
       
       setQuizResult(result);
       setQuizCompleted(true);
