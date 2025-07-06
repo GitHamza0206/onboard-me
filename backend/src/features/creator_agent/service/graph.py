@@ -18,31 +18,14 @@ memory = MemorySaver()
 # Define the nodes
 # ===========================================
 workflow.add_node("generate", generate)
-#workflow.add_node("tools", tool_node)
-workflow.add_node("create_structure", create_structure)
 
 # ===========================================
-
-def should_start_with_generate(state: State) -> str:
-    last_msg = state.messages[-1]
-    if last_msg.content == "PROCEED_TO_GENERATION":
-        return "create_structure"
-    return "generate"
 
 # ===========================================
 # define the edges
 workflow.add_edge(START, "generate")
-workflow.add_edge("generate", "create_structure")
+workflow.add_edge("generate", END)
 
-workflow.add_conditional_edges(
-    START,
-    should_start_with_generate,
-    {
-        "generate": "generate",
-        "create_structure": "create_structure"
-    }
-)
-workflow.add_edge("create_structure", END)
 
 # ===========================================
 
