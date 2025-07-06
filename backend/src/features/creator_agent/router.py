@@ -535,7 +535,7 @@ async def run_generation_in_background(structure: Dict[str, Any]):
     """
     # try:
     print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
-    state = {"course_structure": structure, "user_id": user_id}
+    state = {"course_structure": structure}
     # La configuration pour la limite de récursion est toujours nécessaire
     config = {"recursion_limit": 100} 
     
