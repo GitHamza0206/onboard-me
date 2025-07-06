@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { LessonData } from "@/api/formations";
 import { QuizComponent } from "./quiz/QuizComponent";
-import { generateSampleQuiz } from "./quiz/sampleQuizData";
+import { useQuiz } from "@/hooks/useQuiz";
 
 interface CourseContentProps {
   className?: string;
@@ -23,6 +23,11 @@ export function CourseContent({
   onNextLesson,
   onPreviousLesson 
 }: CourseContentProps) {
+  // Hook pour charger les quiz réels
+  const { quiz, loading, error, hasQuiz } = useQuiz(
+    lesson?.type === 'quiz' ? lesson.moduleId : undefined
+  );
+
   return (
     <div className={cn("flex-1 bg-white", className)}>
       <ScrollArea className="h-full">
@@ -31,22 +36,36 @@ export function CourseContent({
             lesson.type === 'quiz' ? (
               // Render Quiz Component
               <div className="py-4">
-                <QuizComponent
-                  title={lesson.title}
-                  questions={generateSampleQuiz(lesson.title).questions}
-                  onComplete={() => {
-                    console.log('Quiz completed for:', lesson.title);
-                    if (onQuizComplete) {
-                      onQuizComplete();
-                    }
-                    if (onNextLesson) {
-                      onNextLesson();
-                    }
-                  }}
-                  onRetry={() => {
-                    console.log('Quiz retry for:', lesson.title);
-                  }}
-                />
+                {loading ? (
+                  <div className="text-center py-8">
+                    <p>Chargement du quiz...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">Erreur lors du chargement du quiz: {error}</p>
+                  </div>
+                ) : hasQuiz && quiz ? (
+                  <QuizComponent
+                    title={quiz.title}
+                    questions={quiz.questions}
+                    onComplete={() => {
+                      console.log('Quiz completed for:', lesson.title);
+                      if (onQuizComplete) {
+                        onQuizComplete();
+                      }
+                      if (onNextLesson) {
+                        onNextLesson();
+                      }
+                    }}
+                    onRetry={() => {
+                      console.log('Quiz retry for:', lesson.title);
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Aucun quiz disponible pour ce module.</p>
+                  </div>
+                )}
               </div>
             ) : (
               // Render regular lesson content
