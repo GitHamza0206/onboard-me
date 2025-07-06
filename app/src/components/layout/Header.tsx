@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Importez votre logo
-import AppLogo from "@/assets/react.svg";
+import AppLogo from "@/assets/logo.png";
 import { useAuth } from "@/app/auth/authContext"
 
 const getInitials = (name: string): string => {

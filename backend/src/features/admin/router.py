@@ -82,13 +82,14 @@ def create_user_as_admin(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create user: {error_detail}")
 
 @router.get("/users", response_model=List[schema.UserProfileResponse])
-async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
+def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
     """
     (Admin only) Retrieves the list of all users managed by the logged-in admin.
     """
     admin_id = admin_user.get('sub')
 
     try:
+        # --- CORRECTION ICI ---
         managed_users_response = supabase.table('managed_users').select('user_id').eq('manager_id', admin_id).execute()
         print(f"--- MANAGED USERS RESPONSE: {managed_users_response.data} ---")
         
@@ -96,16 +97,18 @@ async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
             return []
 
         managed_user_ids = [item['user_id'] for item in managed_users_response.data]
+        
+        # --- CORRECTION ICI ---
         profiles_response = supabase.table('profiles').select('*').in_('id', managed_user_ids).execute()
         profiles = profiles_response.data
 
         enriched_profiles = []
         for profile in profiles:
             try:
-                auth_user = supabase.auth.admin.get_user_by_id(profile['id']).user
+                # --- CORRECTION ICI ---
+                auth_user_response = supabase.auth.admin.get_user_by_id(profile['id'])
+                auth_user = auth_user_response.user
                 
-                # --- CORRECTION HERE ---
-                # `auth_user.created_at` and `auth_user.last_sign_in_at` are already datetime objects.
                 registration_date = auth_user.created_at.strftime('%d/%m/%Y')
                 last_activity = "Never"
                 if auth_user.last_sign_in_at:
@@ -116,8 +119,8 @@ async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
                     "email": auth_user.email,
                     "registrationDate": registration_date,
                     "lastActivity": last_activity,
-                    "onboardingStatus": "En cours",
-                    "progress": 50
+                    "onboardingStatus": "En cours", # Logique à définir
+                    "progress": 50 # Logique à définir
                 }
                 enriched_profiles.append(enriched_profile)
             except Exception as e:
@@ -127,8 +130,10 @@ async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
         return enriched_profiles
 
     except Exception as e:
+        # Il est bon de logger l'erreur pour le débogage
+        print(f"An error occurred while retrieving users: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to retrieve users: {e}")
-    
+
 @router.get("/users/{user_id}/formations", response_model=List[FormationSchema])
 def get_user_assigned_formations(user_id: UUID, admin_user: dict = Depends(get_current_admin_user)):
     """

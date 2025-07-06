@@ -5,6 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from shared.llm import llm
 from src.features.creator_agent.service.state import State
 
+# --- prompt and chain definitions are unchanged ---
 prompt = ChatPromptTemplate.from_template(
     """You are a world-class course writer. Write the COMPLETE lesson content
 for employees.
@@ -19,20 +20,24 @@ Return *only* well-formatted **HTML** (no markdown, no explanations).
 Use <h2>, <h3>, <p>, <ul><li>, etc.
 """
 )
-
 chain = prompt | llm | StrOutputParser()
+# ---
 
 def generate_lesson(state: State) -> State:
-    sub = state.submodules[state.current_index]
+    submodules = state.get("submodules", [])
+    current_index = state.get("current_index", 0)
+    outputs = state.get("outputs", {})
+
+    sub = submodules[current_index]
     html = chain.invoke(sub)
 
-    # on crée un message pour suivre l’avancement
     progress_msg = AIMessage(
-        content=f"✅ Contenu généré pour {sub['lesson_id']} ({state.current_index+1}/{len(state.submodules)})"
+        content=f"✅ Contenu généré pour {sub.get('lesson_id')} ({current_index + 1}/{len(submodules)})"
     )
 
-    # maj du dictionnaire de sortie
-    new_outputs = {**state.outputs, sub["lesson_id"]: html}
+    # Use .get() on the sub-dictionary as well for safety
+    lesson_id = sub.get("lesson_id")
+    new_outputs = {**outputs, lesson_id: html}
 
     return {
         "messages": [progress_msg],

@@ -14,12 +14,12 @@ workflow.add_node("save", save)
 
 # ↓↓↓  Logique de boucle
 def has_more(state: State) -> str:
-    if state.current_index < len(state.submodules):
+    if state["current_index"]< len(state["submodules"]):
         return "loop"
     return END
 
 def increment_index(state: State) -> State:
-    return {"current_index": state.current_index + 1}
+    return {"current_index": state["current_index"] + 1}
 
 workflow.add_edge(START, "prepare")
 workflow.add_edge("prepare", "generate_lesson")

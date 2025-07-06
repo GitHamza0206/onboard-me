@@ -34,7 +34,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { SidebarMenu } from "../ui/sidebar";
-// import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/logo.png";
 
 // import apiFetch from "@/app/auth/apiFetch.tsx";
 import { useNavigate } from "react-router-dom";
@@ -108,11 +108,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <a href="/">
             <div className="flex flex-row items-center justify-center gap-2 m-2">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground p-2">
-                {/* <img src={Logo} alt="Recrut'Auto" className="w-4 h-4" /> */}
+              <div className="flex aspect-square size-6 items-center justify-center rounded-lg text-sidebar-primary-foreground p-2">
+                <img src={Logo} alt="Recrut'Auto" className="w-8 h-8" />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Onboard-me</span>
+              <div className="grid flex-1 text-left text-lm leading-tight">
+                <span className="truncate font-semibold">OnboardMe</span>
               </div>
             </div>
           </a>
