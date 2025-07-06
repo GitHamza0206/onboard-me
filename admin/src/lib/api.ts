@@ -38,3 +38,27 @@ export async function updateSubmodule(
     body: JSON.stringify(body),
   });
 }
+
+export async function updateFormationContent(
+  token: string,
+  formationId: string | number,
+  formationData: any // Idéalement, utilisez une interface plus stricte ici
+) {
+  const numericId = toNumeric(formationId);
+  
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/formations/${numericId}/content`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formationData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "La mise à jour de la formation a échoué.");
+  }
+
+  return;
+}

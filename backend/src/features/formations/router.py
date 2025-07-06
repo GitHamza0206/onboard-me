@@ -190,3 +190,38 @@ def get_structure(formation_id: int, current_user=Depends(get_current_user)):
     Utilisé par le bouton 'Generate'.
     """
     return get_formation_details(formation_id)
+
+
+@router.put("/{formation_id}/content", status_code=status.HTTP_204_NO_CONTENT)
+def update_formation_content(
+    formation_id: int,
+    data: schema.FormationStructureCreate,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """
+    Met à jour le contenu complet d'une formation : titre, modules et leçons.
+    """
+    try:
+        # 1. Mettre à jour le nom de la formation
+        supabase.table("formations").update({"nom": data.title}).eq("id", formation_id).execute()
+
+        # 2. Parcourir les modules et leçons pour mettre à jour leur contenu
+        for module_data in data.modules:
+            for lesson_data in module_data.lessons:
+                # Extrait l'ID numérique ("lesson_42" -> 42)
+                numeric_lesson_id = int(lesson_data.id.split('_')[1])
+                
+                # Prépare les données à mettre à jour
+                update_payload = {
+                    "titre": lesson_data.title,
+                    "description": lesson_data.description,
+                    "content": lesson_data.content
+                }
+                
+                # Exécute la mise à jour pour chaque leçon
+                supabase.table("submodules").update(update_payload).eq("id", numeric_lesson_id).execute()
+
+    except APIError as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Supabase: {e.message}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne du serveur: {str(e)}")
