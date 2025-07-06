@@ -61,7 +61,6 @@ export function CourseNav({
             value={openModuleId}
             onValueChange={setOpenModuleId}
           >
-<<<<<<< HEAD
             {modules.map((module) => {
               const isModuleAccessible = module.is_accessible !== false;
               return (
@@ -143,7 +142,6 @@ export function CourseNav({
                 </AccordionItem>
               );
             })}
->>>>>>> feat/generate_quizz
           </Accordion>
         </div>
       </ScrollArea>

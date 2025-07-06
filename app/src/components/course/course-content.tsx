@@ -4,14 +4,12 @@ import React, { useEffect } from "react";
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { LessonData } from "@/api/formations";
-<<<<<<< HEAD
 import { QuizComponent } from "./quiz/QuizComponent";
 import { useQuiz } from "@/hooks/useQuiz";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
->>>>>>> feat/generate_quizz
 
 // --- Gardez tous vos imports et configurations Tiptap ici ---
 import StarterKit from '@tiptap/starter-kit';
@@ -76,7 +74,6 @@ interface CourseContentProps {
   canNavigatePrevious?: () => boolean;
 }
 
-<<<<<<< HEAD
 export function CourseContent({
   className,
   lesson,
@@ -91,7 +88,6 @@ export function CourseContent({
     lesson?.type === 'quiz' ? lesson.moduleId : undefined
   );
 
->>>>>>> feat/generate_quizz
   const editor = useEditor({
     editable: false,
     extensions: tiptapExtensions,

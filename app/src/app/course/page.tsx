@@ -5,9 +5,7 @@ import { useAuth } from "@/app/auth/authContext";
 import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
-<<<<<<< HEAD
 import { getFormationWithProgression, FormationWithProgression, LessonData, ProgressionSummary } from "@/api/formations";
->>>>>>> feat/generate_quizz
 import { BackHeader } from "@/components/layout/BackHeader"; // Import du header
 
 export function OnboardingPage() {
@@ -175,20 +173,17 @@ export function OnboardingPage() {
           courseTitle={formation.title}
           modules={formation.modules}
           activeLessonId={activeLesson?.id}
-<<<<<<< HEAD
           onSelectLesson={(lesson) => {
             if (isLessonAccessible(lesson.id)) {
               setActiveLesson(lesson);
             }
           }}
           progression={progression}
->>>>>>> feat/generate_quizz
         />
         
         {/* Main Content (Center) */}
         <CourseContent
           lesson={activeLesson}
-<<<<<<< HEAD
           onQuizComplete={handleQuizComplete}
           onNextLesson={navigateToNextLesson}
           onPreviousLesson={navigateToPreviousLesson}
@@ -210,7 +205,6 @@ export function OnboardingPage() {
             }
             return false;
           }}
->>>>>>> feat/generate_quizz
         />
 
         {/* Support Chat (Right) */}
