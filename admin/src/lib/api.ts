@@ -70,7 +70,6 @@ export async function deleteSubmodule(token: string, id: number | string) {
     throw new Error("Failed to delete lesson");
   }
 }
-
 export async function updateFormationContent(
   token: string,
   formationId: string | number,
