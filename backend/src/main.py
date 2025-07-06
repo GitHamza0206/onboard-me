@@ -73,15 +73,6 @@ app = create_app()
 
 logger = setup_logging()
 
-# Exécuter des tâches à la fermeture
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Shutting down the server...")
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting up the server...")
 
 if __name__ == "__main__":
     import uvicorn
