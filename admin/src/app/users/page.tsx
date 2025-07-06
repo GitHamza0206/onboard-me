@@ -1,19 +1,17 @@
-// src/app/users/page.tsx
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/auth/authContext";
 import { AddUserModal } from "@/components/admin/AddUserModal";
+import { UserDetailsDrawer } from "@/components/admin/UserDetailsDrawer";
 
 import {
     Avatar, AvatarFallback, AvatarImage,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { MoreHorizontal, Pencil, Rocket, Trash2, User as UserIcon } from "lucide-react";
 
 type User = {
     id: string;
@@ -45,7 +43,12 @@ const getInitials = (name: string) => {
 export function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
+
+    // State for the details drawer
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    
     const { token } = useAuth();
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -72,7 +75,16 @@ export function UsersPage() {
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
+    
+    const handleUserClick = (user: User) => {
+        setSelectedUser(user);
+        setIsDrawerOpen(true);
+    };
 
+    const handleUserDeleted = () => {
+        fetchUsers(); // Refresh the list after a user is deleted
+    };
+    
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -80,26 +92,25 @@ export function UsersPage() {
                 <main className="flex-1 p-8 space-y-8">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold">Gestion des Utilisateurs</h1>
-                        <Button onClick={() => setIsModalOpen(true)}>Ajouter un utilisateur</Button>
+                        <Button onClick={() => setAddUserModalOpen(true)}>Ajouter un utilisateur</Button>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
                         <Table>
                             <TableHeader>
-                                <TableRow>
+                                 <TableRow>
                                     <TableHead className="w-[300px]">Nom complet</TableHead>
                                     <TableHead>Statut d'onboarding</TableHead>
                                     <TableHead>Progression (%)</TableHead>
                                     <TableHead>Date d'inscription</TableHead>
                                     <TableHead>Dernière activité</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan={6} className="text-center">Chargement...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} className="text-center">Chargement...</TableCell></TableRow>
                                 ) : (
                                     users.map((user) => (
-                                        <TableRow key={user.id}>
+                                        <TableRow key={user.id} onClick={() => handleUserClick(user)} className="cursor-pointer">
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar>
@@ -121,21 +132,6 @@ export function UsersPage() {
                                             </TableCell>
                                             <TableCell>{user.registrationDate}</TableCell>
                                             <TableCell>{user.lastActivity}</TableCell>
-                                            <TableCell className="text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem><UserIcon className="mr-2 h-4 w-4" />Voir le profil</DropdownMenuItem>
-                                                        <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" />Éditer</DropdownMenuItem>
-                                                        <DropdownMenuItem><Rocket className="mr-2 h-4 w-4" />Relancer l'onboarding</DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-500"><Trash2 className="mr-2 h-4 w-4" />Désactiver</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
                                         </TableRow>
                                     ))
                                 )}
@@ -144,10 +140,17 @@ export function UsersPage() {
                     </div>
                 </main>
             </SidebarInset>
-            <AddUserModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+            <AddUserModal
+                isOpen={isAddUserModalOpen}
+                onClose={() => setAddUserModalOpen(false)}
                 onUserAdded={fetchUsers}
+            />
+            {/* Render the new Drawer */}
+            <UserDetailsDrawer
+                user={selectedUser}
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                onUserDeleted={handleUserDeleted}
             />
         </SidebarProvider>
     );

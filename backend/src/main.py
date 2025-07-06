@@ -13,6 +13,7 @@ from src.features.formations.router import router as formations_router
 from src.features.documents.router import router as documents_router 
 from src.features.creator_agent.router import router as creator_agent_router
 from src.features.composio_integration.router import router as composio_router
+from src.features.quiz.router import router as quiz_router
 import os
 from dotenv import load_dotenv
 
@@ -55,6 +56,7 @@ def create_app() -> FastAPI:
     app.include_router(router_sb)
     app.include_router(router_modules)
     app.include_router(composio_router)
+    app.include_router(quiz_router)
 
 
     # Ajout du middleware CORS

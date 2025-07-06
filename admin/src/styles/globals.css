@@ -44,11 +44,11 @@
 
     /* Couleurs de la barre latérale modifiées en bleu pastel */
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 210, 75%, 72%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 0 0% 9%;
     /* Bleu pastel principal */
     --sidebar-primary-foreground: 0, 0%, 100%;
-    --sidebar-accent: 210, 80%, 92%;
+    --sidebar-accent: 0 0% 9%;
     /* Bleu pastel très clair pour l'accentuation */
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 220 13% 91%;
@@ -56,9 +56,9 @@
     /* Anneau de focus visible mais doux */
 
     /* Couleurs du toggle modifiées en bleu pastel */
-    --toggle-checked: 210, 75%, 72%;
+    --toggle-checked: 0 0% 9%;
     /* Bleu pastel principal */
-    --toggle-hover: 210, 75%, 67%;
+    --toggle-hover: 0 0% 9%;
     /* Version légèrement plus foncée au survol */
 
     /* Couleurs du graphique avec un bleu pastel */

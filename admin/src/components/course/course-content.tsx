@@ -4,6 +4,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { AdminQuizViewer } from "@/components/quiz/AdminQuizViewer";
+import { useQuiz } from "@/hooks/useQuiz";
+import { isQuizLesson } from "@/utils/quizUtils";
 
 // --- Imports pour l'éditeur Tiptap ---
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
@@ -66,13 +69,28 @@ interface CourseContentProps {
   className?: string;
   content: string;
   setContent: (content: string) => void;
+  currentLesson?: {
+    id: string;
+    title: string;
+    type?: 'lesson' | 'quiz';
+    moduleId?: string;
+  };
+  moduleTitle?: string;
 }
 
 export function CourseContent({
   className,
   content,
   setContent,
+  currentLesson,
+  moduleTitle,
 }: CourseContentProps) {
+  // Hook pour charger les quiz réels
+  const { quiz, loading, error, hasQuiz } = useQuiz(
+    currentLesson && isQuizLesson(currentLesson) ? currentLesson.moduleId : undefined,
+    moduleTitle || ''
+  );
+
   const editor = useEditor({
     extensions: tiptapExtensions,
     content: content,
@@ -90,6 +108,38 @@ export function CourseContent({
 
   if (!editor) {
     return null;
+  }
+
+  // Vérifier si on affiche un quiz
+  const isCurrentLessonQuiz = currentLesson && isQuizLesson(currentLesson);
+
+  if (isCurrentLessonQuiz) {
+    return (
+      <div className={cn("flex-1 bg-gray-50 flex flex-col h-full", className)}>
+        <ScrollArea className="flex-1">
+          <div className="p-8">
+            {loading ? (
+              <div className="text-center py-8">
+                <p>Chargement du quiz...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">Erreur lors du chargement du quiz: {error}</p>
+              </div>
+            ) : hasQuiz && quiz ? (
+              <AdminQuizViewer quiz={quiz} />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Aucun quiz disponible pour ce module.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Le quiz sera généré automatiquement lors de la création de contenu via l'IA.
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    );
   }
 
   return (

@@ -8,6 +8,8 @@ import Layout from "./layout";
 import { DashboardPage } from "./app/dashboard/DashboardPage";
 import { MainLayout } from "./layouts/MainLayout";
 import { BackLayout } from "./layouts/BackLayout";
+import { ForgotPasswordPage } from "./app/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "./app/auth/ResetPasswordPage";
 
 // This component provides the global authentication context.
 function Root() {
@@ -25,6 +27,8 @@ const router = createBrowserRouter([
     element: <Root />,
     children: [
       { path: "/auth", element: <Layout><AuthPage /></Layout> },
+      { path: "/forgot-password", element: <Layout><ForgotPasswordPage /></Layout> }, // NOUVELLE ROUTE
+      { path: "/reset-password", element: <Layout><ResetPasswordPage /></Layout> }, // NOUVELLE ROUTE
       {
         element: (
           <ProtectedRoute>
@@ -35,14 +39,23 @@ const router = createBrowserRouter([
           { path: "/home", element: <DashboardPage /> }, // Note : DashboardPage s'affichera dans le <Outlet> de MainLayout
         ],
       },
-            {
+      {
         element: (
           <ProtectedRoute>
             <BackLayout />
           </ProtectedRoute>
         ),
         children: [
-          { path: "/course-onboarding", element: <OnboardingPage /> },
+        ],
+      },
+      {
+        element: (
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        ),
+        children: [
+          { path: "/course-onboarding/:courseId", element: <Outlet /> },
         ],
       },
       { path: "/", element: <Navigate to="/home" replace /> },

@@ -230,6 +230,8 @@ async def chat_stream(request: ChatRequest,  current_user: dict = Depends(get_cu
 async def langgraph_stream(request: LangGraphRunRequest, current_user: dict = Depends(get_current_user)):
     """LangGraph SDK compatible streaming endpoint."""
     
+    print("################GOOOOOOOOO####################")
+    
     async def generate_langgraph_stream():
         # Extract thread_id from config or use provided thread_id
         thread_id = (request.config.get("configurable", {}).get("thread_id") 
@@ -502,9 +504,11 @@ async def generate_structure(
     current_user: dict = Depends(get_current_user)   # protégé
 ):
     """Retourne la structure JSON sans streaming."""
+    user_id = str(current_user.get("sub") or current_user.get("id"))
     # 1. Construit l'état d'entrée
-    state = {"messages": [HumanMessage(content=req.prompt)]}
-    cfg   = {"configurable": {"thread_id": req.thread_id or f"thread_{uuid.uuid4()}"}}    
+
+    state = {"messages": [HumanMessage(content=req.prompt)],"user_id": user_id }
+    cfg   = {"configurable": {"thread_id": req.thread_id or f"thr_{uuid.uuid4()}"}}    
 
     # 2. Exécute *synchroniquement* le graph
     try:
@@ -529,19 +533,19 @@ async def run_generation_in_background(structure: Dict[str, Any]):
     """
     Cette fonction exécute la longue tâche de génération de contenu en arrière-plan.
     """
-    try:
-        print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
-        state = {"course_structure": structure}
-        # La configuration pour la limite de récursion est toujours nécessaire
-        config = {"recursion_limit": 100} 
-        
-        await content_graph.ainvoke(state, config=config)
-        
-        print("--- [BACKGROUND TASK] Génération du contenu terminée avec succès. ---")
+    # try:
+    print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
+    state = {"course_structure": structure}
+    # La configuration pour la limite de récursion est toujours nécessaire
+    config = {"recursion_limit": 100} 
+    
+    await content_graph.ainvoke(state, config=config)
+    
+    print("--- [BACKGROUND TASK] Génération du contenu terminée avec succès. ---")
 
-    except Exception as e:
-        # Dans une vraie application, utilisez un logger plus robuste
-        print(f"--- [ERREUR BACKGROUND TASK] La génération a échoué : {str(e)} ---")
+    # except Exception as e:
+    #     # Dans une vraie application, utilisez un logger plus robuste
+    #     print(f"--- [ERREUR BACKGROUND TASK] La génération a échoué : {str(e)} ---")
 
 
 @router.post("/content", status_code=status.HTTP_202_ACCEPTED) 

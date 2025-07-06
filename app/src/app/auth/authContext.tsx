@@ -1,10 +1,8 @@
 // app/auth/authContext.tsx
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  fetchUserProfile as fetchUserProfileApi,
-  signoutUser,
-} from "@/api/auth";
+import { resetPassword } from "@/api/auth"; // Assurez-vous que l'import est correct
+import { supabase } from "@/lib/supabase";
 
 // L'interface doit correspondre à la réponse de votre route /auth/me
 interface UserProfile {
@@ -95,6 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     navigate("/auth");
   }, [navigate]);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+          throw error;
+      }
+      // Après la mise à jour, on déconnecte pour forcer une reconnexion
+      await signOut();
+  }, [signOut]);
 
   const value = { user, token, signIn, signOut, loading };
 

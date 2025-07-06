@@ -80,7 +80,7 @@ export function CoursesPage() {
             </div>
           )}
 
-          <RecentActivityList />
+          {/* <RecentActivityList /> */}
         </main>
       </SidebarInset>
     </SidebarProvider>
