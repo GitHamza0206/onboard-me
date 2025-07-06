@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react"; // Ajout de useRef
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
-import { Send, Bot, User, Zap, PlusCircle } from "lucide-react"; // Ajout de PlusCircle
+import { Send, Bot, User, Zap, PlusCircle, Loader2 } from "lucide-react"; // Ajout de Loader2
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -39,7 +39,8 @@ export function CreatePage() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isChatStreaming, setIsChatStreaming] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false); // État pour le loader
   const { threadId, newConversation } = useConversation(); // Utiliser le hook
   const [confidenceScore, setConfidenceScore] = useState(0);
   const [showGenerateButton, setShowGenerateButton] = useState(false);
@@ -55,12 +56,12 @@ export function CreatePage() {
 
   useEffect(() => {
     console.log("Confidence score updated:", confidenceScore);
-    if (confidenceScore >= 8 && !isStreaming) {
+    if (confidenceScore >= 8 && !isChatStreaming) {
       setShowGenerateButton(true);
     } else {
       setShowGenerateButton(false);
     }
-  }, [confidenceScore, isStreaming]);
+  }, [confidenceScore, isChatStreaming]);
 
   // Effet pour scroller vers le bas quand un nouveau message arrive
   useEffect(() => {
@@ -97,7 +98,7 @@ export function CreatePage() {
   };
 
   const sendMessage = (text: string) => {
-    if (!text.trim() || isStreaming) return;
+    if (!text.trim() || isChatStreaming) return;
 
     const userMessage: Message = { id: uuidv4(), sender: "user", text };
     const aiMessageId = uuidv4();
@@ -106,7 +107,7 @@ export function CreatePage() {
     setMessages((prev) => [...prev, userMessage, aiPlaceholder]);
 
     setNewMessage("");
-    setIsStreaming(true);
+    setIsChatStreaming(true);
     setShowGenerateButton(false);
 
     const callbacks: StreamCallbacks = {
@@ -138,11 +139,11 @@ export function CreatePage() {
               : msg
           )
         );
-        setIsStreaming(false);
+        setIsChatStreaming(false);
       },
       onClose: () => {
         console.log("SSE Stream closed.");
-        setIsStreaming(false);
+        setIsChatStreaming(false);
       },
     };
 
@@ -173,10 +174,10 @@ export function CreatePage() {
       body: JSON.stringify({ thread_id: threadId, prompt: "PROCEED_TO_GENERATION" })
     });
     if (!res.ok) throw new Error("Generation failed");
-    return res.json();           // {title:"...", modules:[...]}
+    return res.json();          // {title:"...", modules:[...]}
   }
 
-  async function saveFormation(structure:  Record<string, unknown>) {
+  async function saveFormation(structure: Record<string, unknown>) {
     const res = await fetch(`${apiUrl}/formations/`, {
       method: "POST",
       headers: {
@@ -186,12 +187,12 @@ export function CreatePage() {
       body: JSON.stringify(structure)
     });
     if (!res.ok) throw new Error("DB insert failed");
-    return res.json();           // { id: …, nom: … }
+    return res.json();          // { id: …, nom: … }
   }
 
   const handleProceedToGeneration = async () => {
     try {
-      setIsStreaming(true);                         // simple spinner
+      setIsGenerating(true); // Active le loader
       const structure = await fetchStructure(threadId!);
       const created = await saveFormation(structure);
       navigate(`/generation/${created.id}`);
@@ -204,7 +205,7 @@ export function CreatePage() {
     } catch (e: unknown) {
       console.log({ variant: "destructive", title: "Erreur", description: e instanceof Error ? e.message : "An unknown error occurred" });
     } finally {
-      setIsStreaming(false);
+      setIsGenerating(false); // Désactive le loader
     }
   };
 
@@ -212,6 +213,17 @@ export function CreatePage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="flex flex-col h-screen p-4 bg-background">
+        {isGenerating && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 rounded-lg bg-card p-8 shadow-2xl">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <div className="text-center">
+                <p className="text-lg font-medium text-foreground">Génération de la structure...</p>
+                <p className="text-sm text-muted-foreground">Cette opération peut prendre un moment.</p>
+              </div>
+            </div>
+          </div>
+        )}
         <AnimatePresence>
           {!isChatVisible ? (
             <motion.div
@@ -348,12 +360,12 @@ export function CreatePage() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message..."
                     className="flex-1"
-                    disabled={isStreaming}
+                    disabled={isChatStreaming}
                   />
                   <Button
                     type="submit"
                     size="icon"
-                    disabled={!newMessage.trim() || isStreaming}
+                    disabled={!newMessage.trim() || isChatStreaming}
                   >
                     <Send className="w-5 h-5" />
                   </Button>

@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { updateModule, updateSubmodule } from "@/lib/api";
+import { deleteModule, deleteSubmodule, updateModule, updateSubmodule } from "@/lib/api";
 
 // --- Types and Initial Data ---
 type Lesson = { id: number | string; title: string; description: string };
@@ -117,11 +117,26 @@ export function GenerationContent({
   if (loading) return <div className="p-8">Loading…</div>;
 
   // --- Handlers ---
-  const handleDeleteModule = (moduleId: Module['id']) => setCourse(c => c.filter(m => m.id !== moduleId));
-  const handleDeleteLesson = (moduleId: Module['id'], lessonId: Lesson['id']) => {
-    setCourse(c => c.map(m => m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m));
+  const handleDeleteModule = async (moduleId: Module['id']) => {
+    const originalCourse = course;
+    setCourse(c => c.filter(m => m.id !== moduleId));
+    try {
+      await deleteModule(token!, moduleId);
+    } catch (err) {
+      console.error("DB delete failed", err);
+      setCourse(originalCourse); // Revert on failure
+    }
   };
-
+  const handleDeleteLesson = async (moduleId: Module['id'], lessonId: Lesson['id']) => {
+    const originalCourse = course;
+    setCourse(c => c.map(m => m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m));
+    try {
+      await deleteSubmodule(token!, lessonId);
+    } catch (err) {
+      console.error("DB delete failed", err);
+      setCourse(originalCourse); // Revert on failure
+    }
+  };
   const handleUpdateModuleTitle = async (moduleId: Module["id"], newTitle: string) => {
     setCourse(c => c.map(m => m.id === moduleId ? { ...m, title: newTitle } : m));
     setEditingModuleId(null);
@@ -182,7 +197,7 @@ export function GenerationContent({
       updateSubmodule(token!, l.id, { index: idx })      // PATCH /submodules/:id
     );
   }
-  
+
   // --- Drag and Drop Handlers ---
   function handleDragStart(event: DragStartEvent) {
     setActiveDragId(event.active.id);

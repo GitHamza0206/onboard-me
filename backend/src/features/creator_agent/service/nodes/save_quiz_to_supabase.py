@@ -9,18 +9,21 @@ def save_quiz_to_supabase(state: State) -> State:
     """Sauvegarde le quiz généré dans la base de données Supabase"""
     
     try:
+        print("🔄 Début de la sauvegarde du quiz en base de données...")
         # Récupérer le module actuel
-        current_module = state.submodules[state.current_index]
+        current_module = state["submodules"][state["current_index"]]
         module_id = current_module["module_id"]
         numeric_module_id = int(module_id.split("_")[1])
         
         # Récupérer le quiz généré (désérialiser depuis JSON)
         quiz_key = f"quiz_{module_id}"
-        if quiz_key not in state.outputs:
+        if quiz_key not in state["outputs"]:
             return {"messages": [AIMessage(content=f"❌ Aucun quiz trouvé pour le module {module_id}")]}
         
-        quiz_json = state.outputs[quiz_key]
+        quiz_json = state["outputs"][quiz_key]
         quiz_data = json.loads(quiz_json)
+        
+        print(f"📋 Quiz trouvé pour le module {module_id}, sauvegarde en cours...")
         
         # 1. Insérer le quiz principal
         quiz_insert_data = {
@@ -32,8 +35,10 @@ def save_quiz_to_supabase(state: State) -> State:
             "is_active": True
         }
         
+        print(f"💾 Insertion du quiz principal pour module_id={numeric_module_id}")
         quiz_result = supabase.table("quizzes").insert(quiz_insert_data).execute()
         quiz_id = quiz_result.data[0]["id"]
+        print(f"✅ Quiz principal créé avec l'ID: {quiz_id}")
         
         # 2. Insérer les questions
         for question_index, question in enumerate(quiz_data["questions"]):
@@ -60,6 +65,8 @@ def save_quiz_to_supabase(state: State) -> State:
                 
                 supabase.table("quiz_answers").insert(answer_insert_data).execute()
         
+        print(f"🎉 Quiz complètement sauvegardé! ID={quiz_id}, {len(quiz_data['questions'])} questions")
+        
         success_msg = AIMessage(
             content=f"💾 Quiz sauvegardé en DB pour le module {module_id} (ID: {quiz_id}, {len(quiz_data['questions'])} questions)"
         )
@@ -67,5 +74,8 @@ def save_quiz_to_supabase(state: State) -> State:
         return {"messages": [success_msg]}
         
     except Exception as e:
+        print(f"❌ ERREUR lors de la sauvegarde du quiz: {str(e)}")
+        import traceback
+        traceback.print_exc()
         error_msg = AIMessage(content=f"❌ Erreur lors de la sauvegarde du quiz: {str(e)}")
         return {"messages": [error_msg]}

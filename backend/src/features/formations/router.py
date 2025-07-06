@@ -273,6 +273,23 @@ def update_module(module_id: int, payload: schema.ModuleUpdate,
 
 router_sb = APIRouter(prefix="/submodules", tags=["Submodules"])
 
+@router_modules.delete("/{module_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_module_endpoint(module_id: int, current_user: dict = Depends(get_current_admin_user)):
+    """(Admin only) Deletes a module and its association from a formation."""
+    try:
+        # First, delete the link in the formation_modules join table
+        supabase.table("formation_modules").delete().eq("module_id", module_id).execute()
+        
+        # Then, delete the module itself. The database should cascade the delete
+        # to the submodules table if the foreign key is set up with ON DELETE CASCADE.
+        supabase.table("modules").delete().eq("id", module_id).execute()
+            
+        return
+    except APIError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete module: {e.message}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router_sb.put("/{sub_id}", status_code=204)
 def update_sub(sub_id: int, payload: schema.SubmoduleUpdate,
                current_user: dict = Depends(get_current_admin_user)):
@@ -287,6 +304,20 @@ def update_sub(sub_id: int, payload: schema.SubmoduleUpdate,
                 .execute()
     except APIError as e:
         raise HTTPException(500, detail=e.message)
+    
+@router_sb.delete("/{sub_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_submodule_endpoint(sub_id: int, current_user: dict = Depends(get_current_admin_user)):
+    """(Admin only) Deletes a single submodule (lesson)."""
+    try:
+        (supabase.table('submodules')
+            .delete()
+            .eq('id', sub_id)
+            .execute())
+        return
+    except APIError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete submodule: {e.message}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/{formation_id}/structure", response_model=schema.FormationStructureCreate)
 def get_structure(formation_id: int, current_user=Depends(get_current_user)):
