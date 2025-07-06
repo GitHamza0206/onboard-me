@@ -42,7 +42,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { path: "/course-onboarding", element: <OnboardingPage /> },
+          { path: "/course-onboarding/:courseId", element: <OnboardingPage /> },
         ],
       },
       { path: "/", element: <Navigate to="/home" replace /> },

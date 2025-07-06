@@ -52,6 +52,7 @@ export function DashboardPage() {
                         {myCourses.map((course) => (
                             <CourseCard
                                 key={course.id}
+                                id={course.id}
                                 title={course.nom}
                                 description={course.description || "Start this course to learn more."}
                                 imageUrl={course.cover_url || "https://media.istockphoto.com/id/1198271727/fr/photo/objet-ondul%C3%A9-abstrait.jpg?s=612x612&w=0&k=20&c=A2ytpKebpdjcWVcP3BcEdKRJ-s-beXcQRMmOgat5M_8="}
