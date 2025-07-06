@@ -149,7 +149,7 @@ export function CreatePage() {
       },
     };
 
-    streamAgentResponse(text, threadId, callbacks);
+    streamAgentResponse(text, threadId, token, callbacks);
   };
 
   const handleGenerate = () => {
