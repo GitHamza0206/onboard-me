@@ -21,7 +21,6 @@ def prepare(state: State) -> State:
         raise ValueError("course_structure manquant dans le state")
 
     subs = extract_all_submodules(course_structure)
-
     return {
         # Une phrase de statut pour le chat (facultatif)
         "messages": [AIMessage(content=f"📚 {len(subs)} leçons à générer…")],

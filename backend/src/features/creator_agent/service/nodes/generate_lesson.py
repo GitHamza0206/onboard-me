@@ -29,17 +29,35 @@ def generate_lesson(state: State) -> State:
     outputs = state.get("outputs", {})
 
     sub = submodules[current_index]
+    lesson_id = sub.get("lesson_id")
+    lesson_title = sub.get("lesson_title")
+    
+    print(f"--- Génération de la leçon : {lesson_title} ---")
+    
+    # Start message for streaming
+    start_msg = AIMessage(
+        content=f"🔄 Génération en cours: {lesson_title} ({current_index + 1}/{len(submodules)})"
+    )
+    
     html = chain.invoke(sub)
 
-    progress_msg = AIMessage(
-        content=f"✅ Contenu généré pour {sub.get('lesson_id')} ({current_index + 1}/{len(submodules)})"
+    print(f"--- Contenu HTML généré pour {lesson_title} ---")
+    print(html[:500] + "..." if len(html) > 500 else html) # Affiche un aperçu
+
+    # Completion message with more detail
+    completion_msg = AIMessage(
+        content=f"✅ Leçon terminée: {lesson_title} | {len(html)} caractères générés | Progression: {current_index + 1}/{len(submodules)} leçons"
     )
 
-    # Use .get() on the sub-dictionary as well for safety
-    lesson_id = sub.get("lesson_id")
     new_outputs = {**outputs, lesson_id: html}
 
     return {
-        "messages": [progress_msg],
-        "outputs": new_outputs
+        "messages": [start_msg, completion_msg],
+        "outputs": new_outputs,
+        "lesson_generated": {
+            "lesson_id": lesson_id,
+            "lesson_title": lesson_title, 
+            "content_length": len(html),
+            "progress": f"{current_index + 1}/{len(submodules)}"
+        }
     }

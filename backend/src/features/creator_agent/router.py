@@ -506,7 +506,6 @@ async def generate_structure(
     """Retourne la structure JSON sans streaming."""
     user_id = str(current_user.get("sub") or current_user.get("id"))
     # 1. Construit l'état d'entrée
-
     state = {"messages": [HumanMessage(content=req.prompt)],"user_id": user_id }
     cfg   = {"configurable": {"thread_id": req.thread_id or f"thr_{uuid.uuid4()}"}}    
 
@@ -565,3 +564,117 @@ async def generate_all_lessons(
         "message": "La génération du contenu a été lancée. "
                    "Les leçons apparaîtront dans la base de données dans quelques minutes."
     }
+
+@router.post("/content/stream")
+async def generate_all_lessons_stream(
+    req: GenerateContentRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Streaming endpoint for content generation with real-time updates.
+    """
+    user_id = str(current_user.get("sub") or current_user.get("id"))
+    
+    async def generate_content_stream():
+        """Stream content generation with real-time progress updates."""
+        try:
+            # Generate unique thread ID for this generation session
+            thread_id = f"content_gen_{uuid.uuid4()}"
+            config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 100}
+            
+            # Initial state with course structure
+            initial_state = {
+                "course_structure": req.structure,
+                "user_id": user_id
+            }
+            
+            # Send initial status
+            yield f"data: {json.dumps(['status', {'message': 'Starting content generation...', 'thread_id': thread_id}])}\n\n"
+            
+            # Stream the content generation graph
+            async for mode, chunk in content_graph.astream(
+                initial_state,
+                config,
+                stream_mode=["values", "messages", "updates", "debug"]
+            ):
+                if mode == "messages":
+                    # Stream individual tokens/messages
+                    token, _ = chunk
+                    if hasattr(token, 'type') and token.type == 'tool':
+                        continue
+                    token_text = token.content if hasattr(token, "content") else str(token)
+                    yield f"data: {json.dumps(['messages', token_text])}\n\n"
+                    
+                elif mode == "values":
+                    # Stream state values and progress
+                    other_values = {k: v for k, v in chunk.items() 
+                                  if k not in ["messages", "course_structure"] and v is not None}
+                    other_values["thread_id"] = thread_id
+                    
+                    if other_values:
+                        yield f"data: {json.dumps(['values', other_values])}\n\n"
+                        
+                elif mode == "updates":
+                    # Stream node updates and progress
+                    for node_name, state_update in chunk.items():
+                        if "messages" in state_update and state_update["messages"]:
+                            serializable_messages = []
+                            for msg in state_update["messages"]:
+                                if hasattr(msg, 'content'):
+                                    msg_dict = {
+                                        "role": getattr(msg, 'type', 'unknown'),
+                                        "type": getattr(msg, 'type', 'unknown'),
+                                        "content": msg.content,
+                                        "id": getattr(msg, 'id', None)
+                                    }
+                                    serializable_messages.append(msg_dict)
+                            
+                            update_info = {
+                                "node": node_name,
+                                "messages": serializable_messages,
+                                "thread_id": thread_id
+                            }
+                            yield f"data: {json.dumps(['updates', update_info])}\n\n"
+                        
+                        # Stream lesson completion progress
+                        if "outputs" in state_update and state_update["outputs"]:
+                            progress_data = {
+                                "node": node_name,
+                                "outputs_count": len(state_update["outputs"]),
+                                "thread_id": thread_id
+                            }
+                            yield f"data: {json.dumps(['progress', progress_data])}\n\n"
+                            
+                elif mode == "debug":
+                    # Stream debug information
+                    debug_info = {
+                        "type": "debug",
+                        "data": str(chunk),
+                        "thread_id": thread_id
+                    }
+                    yield f"data: {json.dumps(['debug', debug_info])}\n\n"
+            
+            # Send completion status
+            yield f"data: {json.dumps(['status', {'message': 'Content generation completed successfully!', 'completed': True, 'thread_id': thread_id}])}\n\n"
+            
+        except Exception as e:
+            # Send error status
+            error_data = {
+                "type": "error", 
+                "message": str(e),
+                "thread_id": thread_id if 'thread_id' in locals() else None
+            }
+            yield f"data: {json.dumps(['error', error_data])}\n\n"
+    
+    return StreamingResponse(
+        generate_content_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        }
+    )

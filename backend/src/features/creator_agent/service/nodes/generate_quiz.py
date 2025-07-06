@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List
 from shared.llm import llm
 from src.features.creator_agent.service.state import State
+import json
 
 
 class QuizAnswer(BaseModel):
@@ -80,23 +81,41 @@ Crée un quiz de 5 questions à choix multiples basé sur le contenu des leçons
     chain = prompt | llm | parser
     
     try:
+        print(f"--- Génération du quiz pour le module : {module_title} ---")
+        
+        # Start quiz generation message
+        start_quiz_msg = AIMessage(
+            content=f"📝 Génération du quiz en cours pour le module: {module_title}"
+        )
+        
         quiz_data = chain.invoke({
             "lessons_content": lessons_text,
             "module_title": module_title,
             "format_instructions": parser.get_format_instructions()
         })
         
+        print(f"--- Quiz généré pour {module_title} ---")
+        # Utiliser json.dumps pour un affichage propre du JSON
+        print(json.dumps(quiz_data.model_dump(), indent=2, ensure_ascii=False))
+
         quiz_key = f"quiz_{current_module_id}"
         # FIX: Use dictionary key access for 'outputs'
         new_outputs = {**state['outputs'], quiz_key: quiz_data.model_dump_json()}
         
-        progress_msg = AIMessage(
-            content=f"📝 Quiz généré pour le module {current_module_id} ({len(quiz_data.questions)} questions)"
+        # Completion message with more detail
+        completion_msg = AIMessage(
+            content=f"✅📝 Quiz terminé pour le module {module_title} | {len(quiz_data.questions)} questions générées"
         )
         
         return {
-            "messages": [progress_msg],
-            "outputs": new_outputs
+            "messages": [start_quiz_msg, completion_msg],
+            "outputs": new_outputs,
+            "quiz_generated": {
+                "module_id": current_module_id,
+                "module_title": module_title,
+                "question_count": len(quiz_data.questions),
+                "quiz_key": quiz_key
+            }
         }
         
     except Exception as e:
