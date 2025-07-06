@@ -24,7 +24,11 @@ workflow.add_edge("ingest_knowledge", "generate")
 
 def should_continue(state: State) -> str:
     """Return 'tools' if the agent should call tools, otherwise return END."""
-    if state.messages[-1].tool_calls:
+    messages = state.get("messages", [])
+    if not messages:
+        return END
+    last_message = messages[-1]
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
         return "tools"
     return END
 
@@ -33,8 +37,8 @@ workflow.add_conditional_edges(
     should_continue,
     {"tools": "tools", END: END},
 )
-#workflow.add_edge("tools", "generate")
-workflow.add_edge("generate", END)
+workflow.add_edge("tools", "generate")
+
 # Compile
 graph = workflow.compile(checkpointer=memory)
 

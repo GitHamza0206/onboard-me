@@ -227,7 +227,7 @@ async def chat_stream(request: ChatRequest,  current_user: dict = Depends(get_cu
     return chat_handler.get_streaming_response(request.message, user_id)
 
 @router.post("/runs/stream")
-async def langgraph_stream(request: LangGraphRunRequest):
+async def langgraph_stream(request: LangGraphRunRequest, current_user: dict = Depends(get_current_user)):
     """LangGraph SDK compatible streaming endpoint."""
     
     async def generate_langgraph_stream():
@@ -238,6 +238,9 @@ async def langgraph_stream(request: LangGraphRunRequest):
         
         config = {"configurable": {"thread_id": thread_id}}
         
+        # Get user_id from the authenticated user
+        user_id = str(current_user.get("sub") or current_user.get("id"))
+        
         # Convert input messages to LangChain format
         messages = []
         if "messages" in request.input:
@@ -246,10 +249,12 @@ async def langgraph_stream(request: LangGraphRunRequest):
                     messages.append(HumanMessage(content=msg["content"]))
                 # Add other message types as needed
         
+        initial_state = {"messages": messages, "user_id": user_id}
+        
         try:
             # Stream the graph execution
             async for mode, chunk in graph.astream(
-                {"messages": messages},
+                initial_state,
                 config,
                 stream_mode=request.stream_mode
             ):

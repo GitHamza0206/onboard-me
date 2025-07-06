@@ -51,8 +51,8 @@ def generate(state: State) -> State:
     This node is the "agent" in our graph. It uses the LLM with tools to decide what to do next.
     It can either respond to the user directly or decide to call one or more tools.
     """
-    messages = state.messages
-    knowledge = state.knowledge
+    messages = state.get("messages")
+    knowledge = state.get("knowledge")
     response = chain.invoke({"messages": messages, "knowledge": knowledge})
 
     # We are not calculating confidence score here anymore as the agent might be calling tools.
