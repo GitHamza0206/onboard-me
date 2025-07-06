@@ -14,6 +14,7 @@ def save(state: State) -> State:
 
     lesson_info = submodules[current_index]
     lesson_id = lesson_info.get("lesson_id")
+    lesson_title = lesson_info.get("lesson_title")
     html_content = outputs.get(lesson_id)
 
     if not all([lesson_id, html_content]):
@@ -21,7 +22,20 @@ def save(state: State) -> State:
 
     try:
         numeric_id = int(lesson_id.split('_')[1])
+        
+        # Start save message
+        start_save_msg = AIMessage(
+            content=f"💾 Sauvegarde en cours: {lesson_title} ({current_index + 1}/{len(submodules)})"
+        )
+        
         supabase.table("submodules").update({"content": html_content}).eq("id", numeric_id).execute()
+        
+        # Success save message
+        save_success_msg = AIMessage(
+            content=f"✅💾 Leçon sauvegardée: {lesson_title} | Base de données mise à jour"
+        )
+        
+        messages = [start_save_msg, save_success_msg]
         
         # Logique critique pour la fin du processus
         if current_index + 1 == len(submodules):
@@ -39,11 +53,20 @@ def save(state: State) -> State:
                     
                     supabase.table("formations").update({"has_content": True}).eq("id", formation_id).execute()
                     
-                    final_message = f"✅💾 Contenu de la formation terminé. Statut mis à jour pour la formation {formation_id}."
+                    final_message = AIMessage(
+                        content=f"🎉 Formation terminée! Toutes les {len(submodules)} leçons ont été générées et sauvegardées. Formation ID {formation_id} mise à jour avec has_content = true."
+                    )
+                    
+                    messages.append(final_message)
                     
                     # CORRECTION : Mettre fin explicitement au graphe ici
                     return {
-                        "messages": [AIMessage(content=final_message)],
+                        "messages": messages,
+                        "formation_completed": {
+                            "formation_id": formation_id,
+                            "total_lessons": len(submodules),
+                            "status": "completed"
+                        },
                         END: True  # Signal de fin pour langgraph
                     }
                 else:
@@ -54,4 +77,11 @@ def save(state: State) -> State:
         print(f"--- [ERREUR] {error_message} ---")
         return {"messages": [AIMessage(content=error_message)]}
 
-    return {"messages": [AIMessage(content=f"💾 Leçon {lesson_id} sauvegardée avec succès.")]}
+    return {
+        "messages": messages,
+        "lesson_saved": {
+            "lesson_id": lesson_id,
+            "lesson_title": lesson_title,
+            "progress": f"{current_index + 1}/{len(submodules)}"
+        }
+    }
