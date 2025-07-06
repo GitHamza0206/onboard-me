@@ -234,7 +234,7 @@ async def langgraph_stream(request: LangGraphRunRequest, current_user: dict = De
         # Extract thread_id from config or use provided thread_id
         thread_id = (request.config.get("configurable", {}).get("thread_id") 
                     or request.thread_id 
-                    or f"thread_{asyncio.current_task().get_name()}")
+                    or f"thread_{uuid.uuid4()}")
         
         config = {"configurable": {"thread_id": thread_id}}
         
@@ -483,8 +483,7 @@ async def get_thread(thread_id: str):
 @router.post("/threads")
 async def create_thread():
     """Create new thread - LangGraph Platform compatible."""
-    import uuid
-    thread_id = str(uuid.uuid4())
+    thread_id = f"thread_{uuid.uuid4()}"
     return {
         "thread_id": thread_id,
         "created_at": "2024-01-01T00:00:00Z",
@@ -505,7 +504,7 @@ async def generate_structure(
     """Retourne la structure JSON sans streaming."""
     # 1. Construit l'état d'entrée
     state = {"messages": [HumanMessage(content=req.prompt)]}
-    cfg   = {"configurable": {"thread_id": req.thread_id or f"thr_{uuid.uuid4()}"}}    
+    cfg   = {"configurable": {"thread_id": req.thread_id or f"thread_{uuid.uuid4()}"}}    
 
     # 2. Exécute *synchroniquement* le graph
     try:

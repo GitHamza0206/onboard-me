@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react"; // Ajout de useRef
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
-import { Send, Bot, User, Zap } from "lucide-react";
+import { Send, Bot, User, Zap, PlusCircle } from "lucide-react"; // Ajout de PlusCircle
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -26,7 +26,7 @@ import { useAuth } from "../auth/authContext";
 import { useNavigate } from "react-router-dom";
 import { ContextPopup } from "@/components/create/ContextPopup";
 import { useDocumentManagement } from "@/hooks/useDocumentManagement";
-
+import { useConversation } from "@/hooks/useConversation"; // Importer le nouveau hook
 
 interface Message {
   id: string;
@@ -40,7 +40,7 @@ export function CreatePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [threadId, setThreadId] = useState<string | null>(null);
+  const { threadId, newConversation } = useConversation(); // Utiliser le hook
   const [confidenceScore, setConfidenceScore] = useState(0);
   const [showGenerateButton, setShowGenerateButton] = useState(false);
   const [showContextPopup, setShowContextPopup] = useState(false);
@@ -127,9 +127,6 @@ export function CreatePage() {
         if (typeof values.confidence_score === 'number') {
           setConfidenceScore(values.confidence_score);
           console.log("Confidence score received:", values.confidence_score);
-        }
-        if (values.thread_id && !threadId) {
-          setThreadId(values.thread_id);
         }
       },
       onError: (error: ErrorPayload) => {
@@ -332,6 +329,20 @@ export function CreatePage() {
                   onSubmit={handleFormSubmit}
                   className="flex items-center gap-4"
                 >
+                  {/* Bouton pour une nouvelle conversation */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      newConversation();
+                      setMessages([]); // Vider les messages
+                      setIsChatVisible(false); // Revenir à l'écran initial
+                    }}
+                    title="New Conversation"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                  </Button>
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}

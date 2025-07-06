@@ -3,13 +3,27 @@ from src.features.creator_agent.service.state import State
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from shared.llm import llm
+from shared.llm import llm, llm_not_streaming
 
+from pydantic import BaseModel, Field
+
+
+class Lesson(BaseModel):
+    id: str = Field(description="The unique identifier of the lesson")  
+    title: str = Field(description="The title of the lesson")
+    description: str = Field(description="The description of the lesson")
+
+class Module(BaseModel):
+    id: str = Field(description="The unique identifier of the module")
+    title: str = Field(description="The title of the module")
+    lessons: list[Lesson] = Field(description="The lessons of the module")
+
+class CourseStructure(BaseModel):
+    title: str = Field(description="The title of the course")
+    modules: list[Module] = Field(description="The modules of the course")
 # Prompt to generate the course structure as a JSON object
-structure_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
+structure_prompt = ChatPromptTemplate.from_template(
+
             """You are a world-class instructional designer. Based on the entire conversation provided, your task is to generate a comprehensive, structured course outline.
 
 The user has confirmed that you have enough information to proceed. Now, create the course structure.
@@ -62,20 +76,25 @@ The user has confirmed that you have enough information to proceed. Now, create 
 }}
 
 Do not add any explanations or introductory text before or after the JSON object.
-""",
-        ),
-        ("human", "{query}"),
-    ]
+
+given the following conversation:
+{messages}
+
+and the context : {knowledge}
+
+generate the course structure.
+"""
 )
 
 
+
 # Chain for creating the structure
-chain = structure_prompt | llm | JsonOutputParser()
+chain = structure_prompt | llm_not_streaming.with_structured_output(CourseStructure)
 
 def create_structure(state: State) -> State:
-    query = "\n".join([f"{m.type}: {m.content}" for m in state.get("messages", [])])
-    structure_json = chain.invoke({"query": query})           # ← génère la structure
-    print(f"Generated structure: {structure_json}")
+    messages = state.get("messages", [])
+    knowledge = state.get("knowledge")
+    structure_json = chain.invoke({"messages": messages, "knowledge": knowledge})           # ← génère la structure
     
     return {
         "messages": [
@@ -83,5 +102,5 @@ def create_structure(state: State) -> State:
                 content="✅ Structure générée, envoi au front…"
             )
         ],
-        "course_structure": structure_json                # ← nouveau champ dans l’état
+        "course_structure": structure_json.model_dump()                # ← nouveau champ dans l’état
     }

@@ -16,10 +16,10 @@ def extract_all_submodules(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
     return subs
 
 def prepare(state: State) -> State:
-    if not state.course_structure:
+    if not state.get("course_structure"):
         raise ValueError("course_structure manquant dans le state")
 
-    subs = extract_all_submodules(state.course_structure)
+    subs = extract_all_submodules(state.get("course_structure"))
     return {
         # Une phrase de statut pour le chat (facultatif)
         "messages": [AIMessage(content=f"📚 {len(subs)} leçons à générer…")],
