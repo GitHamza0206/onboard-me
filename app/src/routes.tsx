@@ -8,6 +8,8 @@ import Layout from "./layout";
 import { DashboardPage } from "./app/dashboard/DashboardPage";
 import { MainLayout } from "./layouts/MainLayout";
 import { BackLayout } from "./layouts/BackLayout";
+import { ForgotPasswordPage } from "./app/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "./app/auth/ResetPasswordPage";
 
 // This component provides the global authentication context.
 function Root() {
@@ -25,6 +27,8 @@ const router = createBrowserRouter([
     element: <Root />,
     children: [
       { path: "/auth", element: <Layout><AuthPage /></Layout> },
+      { path: "/forgot-password", element: <Layout><ForgotPasswordPage /></Layout> }, // NOUVELLE ROUTE
+      { path: "/reset-password", element: <Layout><ResetPasswordPage /></Layout> }, // NOUVELLE ROUTE
       {
         element: (
           <ProtectedRoute>

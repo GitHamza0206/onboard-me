@@ -46,7 +46,16 @@ export function AuthPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                {/* --- LIEN AJOUTÉ --- */}
+                <Link
+                  to="/forgot-password"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -60,12 +69,6 @@ export function AuthPage() {
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
-            <Link to="/register" className="underline">
-              Register here
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -36,6 +36,7 @@
     "@radix-ui/react-toast": "^1.2.7",
     "@radix-ui/react-tooltip": "^1.1.7",
     "@radix-ui/themes": "^3.2.0",
+    "@supabase/supabase-js": "^2.50.3",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-table": "^8.20.6",
     "@tiptap/extension-code-block-lowlight": "^2.24.2",

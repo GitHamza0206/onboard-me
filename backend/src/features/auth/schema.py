@@ -28,3 +28,11 @@ class UserProfile(BaseModel):
     class Config:
         # Permet à Pydantic de lire les données depuis des objets non-dict
         from_attributes = True
+
+class PasswordResetRequest(BaseModel):
+    """ Modèle pour la demande de réinitialisation de mot de passe. """
+    email: EmailStr
+
+class PasswordResetPayload(BaseModel):
+    """ Modèle pour la soumission du nouveau mot de passe. """
+    password: str
