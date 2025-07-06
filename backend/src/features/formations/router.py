@@ -13,17 +13,24 @@ router = APIRouter(
 
 @router.get("/", response_model=List[schema.Formation])
 def get_all_formations(
-    current_user: dict = Depends(get_current_user) # Protège la route
+    current_user: dict = Depends(get_current_user) # On récupère l'utilisateur connecté
 ):
     """
-    Récupère la liste de toutes les formations.
-    Accessible uniquement aux utilisateurs connectés.
+    Récupère la liste des formations CRÉÉES PAR l'utilisateur connecté.
     """
     try:
-        response = supabase.table('formations').select('*').execute()
+        # 1. Récupérer l'ID de l'utilisateur connecté depuis le token
+        user_id = current_user.get('sub')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token utilisateur invalide")
+
+        response = supabase.table('formations').select('*').eq('creator_id', user_id).execute()
+        
         return response.data
+        
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 
 @router.post("/assign")
