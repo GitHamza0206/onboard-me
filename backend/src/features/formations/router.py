@@ -62,7 +62,7 @@ def create_formation_from_structure(
     """
     try:
         # Appelle la fonction PostgreSQL avec le JSON de la formation
-        print("Payload envoyé à Supabase RPC:", formation_data.model_dump(by_alias=True))
+        # print("Payload envoyé à Supabase RPC:", formation_data.model_dump(by_alias=True))
         result = supabase.rpc('create_formation_from_structure', {
             'structure_json': formation_data.model_dump(by_alias=True) # Utilise .model_dump() pour pydantic v2
         }).execute()
@@ -135,7 +135,7 @@ def get_formation_details(formation_id: int):
                 }
             )
             
-        print("Modules formatés :", data)
+        # print("Modules formatés :", data)
 
         return {
             "title": data['nom'],
@@ -156,7 +156,7 @@ def update_module(module_id: int, payload: schema.ModuleUpdate,
     to_update = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not to_update:
         return
-    print("Payload de mise à jour :", to_update)
+    # print("Payload de mise à jour :", to_update)
     try:
         supabase.table("modules") \
                 .update(to_update) \
@@ -173,7 +173,7 @@ def update_sub(sub_id: int, payload: schema.SubmoduleUpdate,
     to_update = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not to_update:
         return
-    print("Payload de mise à jour :", to_update)
+    # print("Payload de mise à jour :", to_update)
     try:
         supabase.table("submodules") \
                 .update(to_update) \

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Body
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import AsyncGenerator, Dict, Any, List
@@ -518,21 +518,40 @@ async def generate_structure(
 
 class GenerateContentRequest(BaseModel):
     structure: Dict[str, Any]
+    
+async def run_generation_in_background(structure: Dict[str, Any]):
+    """
+    Cette fonction exécute la longue tâche de génération de contenu en arrière-plan.
+    """
+    try:
+        print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
+        state = {"course_structure": structure}
+        # La configuration pour la limite de récursion est toujours nécessaire
+        config = {"recursion_limit": 100} 
+        
+        await content_graph.ainvoke(state, config=config)
+        
+        print("--- [BACKGROUND TASK] Génération du contenu terminée avec succès. ---")
 
-@router.post("/content", status_code=200)
+    except Exception as e:
+        # Dans une vraie application, utilisez un logger plus robuste
+        print(f"--- [ERREUR BACKGROUND TASK] La génération a échoué : {str(e)} ---")
+
+
+@router.post("/content", status_code=status.HTTP_202_ACCEPTED) 
 async def generate_all_lessons(
     req: GenerateContentRequest,
+    background_tasks: BackgroundTasks, # Ajoutez ce paramètre
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Lance la génération du contenu pédagogique pour chaque leçon (submodule).
+    Lance la génération du contenu en tâche de fond et répond immédiatement.
     """
-    try:
-        state = {"course_structure": req.structure}
-        result = await content_graph.ainvoke(state)
-        return {
-            "message": "Contenu généré avec succès.",
-            "html_by_lesson_id": result["outputs"]  # format: {lesson_id: "<h2>...</h2>"}
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Planifie l'exécution de la fonction `run_generation_in_background` après avoir envoyé la réponse
+    background_tasks.add_task(run_generation_in_background, req.structure)
+    
+    # Répond immédiatement au client
+    return {
+        "message": "La génération du contenu a été lancée. "
+                   "Les leçons apparaîtront dans la base de données dans quelques minutes."
+    }

@@ -9,6 +9,7 @@ def extract_all_submodules(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
     for mod in structure["modules"]:
         for lesson in mod["lessons"]:
             subs.append({"module_id": mod["id"],
+                         "module_title": mod["title"], 
                          "lesson_id": lesson["id"],
                          "lesson_title": lesson["title"],
                          "lesson_description": lesson["description"]})
