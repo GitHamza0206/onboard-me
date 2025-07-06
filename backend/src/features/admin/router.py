@@ -32,14 +32,14 @@ def create_user_as_admin(
     A temporary password is generated and must be communicated to the user.
     """
     admin_id = admin_user.get('sub')
-    temp_password = generate_temporary_password()
+    temp_password = "imadimadimad"
 
     try:
         # 1. Create the user in Supabase Auth
         created_user_response = supabase.auth.admin.create_user({
             "email": new_user_data.email,
             "password": "tototiti",
-            "email_confirm": False
+            "email_confirm": True
         })
         new_user = created_user_response.user
         new_user_id = new_user.id
