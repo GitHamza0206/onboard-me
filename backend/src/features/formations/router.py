@@ -69,11 +69,20 @@ def create_formation_from_structure(
     Crée une nouvelle formation en appelant la fonction RPC de Supabase.
     """
     try:
-        # Appelle la fonction PostgreSQL avec le JSON de la formation
-        # print("Payload envoyé à Supabase RPC:", formation_data.model_dump(by_alias=True))
-        result = supabase.rpc('create_formation_from_structure', {
-            'structure_json': formation_data.model_dump(by_alias=True) # Utilise .model_dump() pour pydantic v2
-        }).execute()
+        # 1. Obtenir l'ID de l'utilisateur admin qui fait la requête
+        user_id = current_user.get('sub')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token utilisateur invalide, impossible de définir le créateur.")
+
+        # 2. Préparer les paramètres pour la fonction RPC
+        #    On inclut maintenant l'ID du créateur.
+        rpc_params = {
+            'p_creator_id': user_id,
+            'structure_json': formation_data.model_dump(by_alias=True)
+        }
+
+        # 3. Appeler la fonction RPC avec les paramètres complets
+        result = supabase.rpc('create_formation_from_structure', rpc_params).execute()
         
         new_formation_id = result.data
         if not new_formation_id:
@@ -126,24 +135,22 @@ def get_formation_details(formation_id: int):
         ]
 
         formatted_modules = []
-        for module in sorted(modules_src, key=lambda m: m.get("index", 0)):
-            formatted_lessons = [
-                {
-                    "id": f"lesson_{lesson['id']}",
-                    "title": lesson['titre'],
-                    "description": lesson['description'],
-                    "content": lesson.get('content', '')
-                }
-                for lesson in sorted(module.get("submodules", []), key=lambda l: l.get("index", 0))
-            ]
-
-            formatted_modules.append(
-                {
-                    "id": f"module_{module['id']}",
-                    "title": module['titre'],
-                    "lessons": formatted_lessons,
-                }
-            )
+        for module in sorted(modules_src, key=lambda m: m.get("index") or 0):
+                    # ET ICI
+                    formatted_lessons = [
+                        {
+                            "id": f"lesson_{lesson['id']}",
+                            "title": lesson['titre'],
+                            "description": lesson['description'],
+                            "content": lesson.get('content', '')
+                        }
+                        for lesson in sorted(module.get("submodules", []), key=lambda l: l.get("index") or 0)
+                    ]
+                    formatted_modules.append({
+                        "id": f"module_{module['id']}",
+                        "title": module['titre'],
+                        "lessons": formatted_lessons,
+                    })
             
         # print("Modules formatés :", data)
 
