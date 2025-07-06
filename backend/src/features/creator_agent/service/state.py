@@ -6,7 +6,7 @@ from langgraph.graph.message import add_messages
 import operator
 
 
-class State(BaseModel):
+class State(TypedDict):
 
     messages: Annotated[list[BaseMessage], add_messages]
 
