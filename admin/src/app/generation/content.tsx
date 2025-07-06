@@ -17,7 +17,7 @@ interface LessonData {
   id: string;
   title: string;
   description: string;
-  content?: string | null; // Le contenu HTML de la leçon (optional to handle loading states)
+  content: string; // Le contenu HTML de la leçon
   type?: 'lesson' | 'quiz';
   moduleId?: string;
 }

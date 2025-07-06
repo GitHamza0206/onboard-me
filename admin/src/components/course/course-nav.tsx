@@ -20,7 +20,7 @@ interface LessonData {
   title: string; 
   description: string; // Required description field to match content.tsx interface
   type?: 'lesson' | 'quiz';
-  content?: string | null; // Add content field to check if lesson is generated
+  content: string; // Required content field to match other interfaces
 }
 interface ModuleData { id: string; title: string; lessons: LessonData[]; }
 
@@ -32,7 +32,7 @@ interface CourseNavProps {
 }
 
 // Utility function to check if lesson content is empty or loading
-const isLessonContentEmpty = (content: string | null): boolean => {
+const isLessonContentEmpty = (content: string): boolean => {
   if (!content) return true;
   
   const trimmed = content.trim();
