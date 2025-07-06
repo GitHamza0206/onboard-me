@@ -6,10 +6,13 @@ from langgraph.graph.message import add_messages
 import operator
 
 
-class State(BaseModel):
+class State(TypedDict):
 
     messages: Annotated[list[BaseMessage], add_messages]
-    confidence_score: int = 0
+
+    user_id: Optional[str] = None
+    knowledge: Optional[str] = None
+    confidence_score: Optional[int] = None
     course_structure: Optional[Dict[str, Any]] = None
     
     submodules: Optional[List[Dict[str, Any]]] = None

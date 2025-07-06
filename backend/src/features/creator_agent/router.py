@@ -148,10 +148,10 @@ class ChatStreamService:
     def __init__(self):
         self.processor = StreamEventProcessor()
     
-    async def stream_graph_state(self, message: str) -> AsyncGenerator[str, None]:
+    async def stream_graph_state(self, message: str, user_id: str) -> AsyncGenerator[str, None]:
         """Stream events as the graph processes the message."""
         try:
-            new_input = {"messages": [HumanMessage(content=message)]}
+            new_input = {"messages": [HumanMessage(content=message)], "user_id": user_id}
             
             async for mode, chunk in graph.astream(
                 new_input,
@@ -185,13 +185,13 @@ class ChatAPIHandler:
     def __init__(self):
         self.chat_service = ChatStreamService()
     
-    def create_sync_generator(self, message: str):
+    def create_sync_generator(self, message: str, user_id: str):
         """Create synchronous generator for FastAPI StreamingResponse."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         async def async_generator():
-            async for chunk in self.chat_service.stream_graph_state(message):
+            async for chunk in self.chat_service.stream_graph_state(message, user_id):
                 yield chunk
         
         gen = async_generator()
@@ -203,10 +203,10 @@ class ChatAPIHandler:
         finally:
             loop.close()
     
-    def get_streaming_response(self, message: str) -> StreamingResponse:
+    def get_streaming_response(self, message: str, user_id: str) -> StreamingResponse:
         """Create StreamingResponse with proper headers."""
         return StreamingResponse(
-            self.create_sync_generator(message),
+            self.create_sync_generator(message, user_id),
             media_type="text/plain",
             headers={
                 "Cache-Control": "no-cache",
@@ -221,12 +221,13 @@ chat_handler = ChatAPIHandler()
 
 
 @router.post("/chat")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(request: ChatRequest,  current_user: dict = Depends(get_current_user)):
     """Streaming chat endpoint that processes messages through the graph."""
-    return chat_handler.get_streaming_response(request.message)
+    user_id = str(current_user.get("sub") or current_user.get("id"))
+    return chat_handler.get_streaming_response(request.message, user_id)
 
 @router.post("/runs/stream")
-async def langgraph_stream(request: LangGraphRunRequest):
+async def langgraph_stream(request: LangGraphRunRequest, current_user: dict = Depends(get_current_user)):
     """LangGraph SDK compatible streaming endpoint."""
     
     async def generate_langgraph_stream():
@@ -237,6 +238,9 @@ async def langgraph_stream(request: LangGraphRunRequest):
         
         config = {"configurable": {"thread_id": thread_id}}
         
+        # Get user_id from the authenticated user
+        user_id = str(current_user.get("sub") or current_user.get("id"))
+        
         # Convert input messages to LangChain format
         messages = []
         if "messages" in request.input:
@@ -245,10 +249,12 @@ async def langgraph_stream(request: LangGraphRunRequest):
                     messages.append(HumanMessage(content=msg["content"]))
                 # Add other message types as needed
         
+        initial_state = {"messages": messages, "user_id": user_id}
+        
         try:
             # Stream the graph execution
             async for mode, chunk in graph.astream(
-                {"messages": messages},
+                initial_state,
                 config,
                 stream_mode=request.stream_mode
             ):
