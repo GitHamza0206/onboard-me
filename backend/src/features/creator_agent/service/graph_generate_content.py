@@ -27,15 +27,16 @@ def increment_index(state: State) -> State:
 
 def should_generate_quiz(state: State) -> str:
     """Détermine si on doit générer un quiz après cette leçon"""
-    current_index = state.current_index
+    # FIX: Use dictionary key access instead of attribute access
+    current_index = state["current_index"]
     
     # Si c'est la dernière leçon de toute la formation
-    if current_index >= len(state.submodules) - 1:
+    if current_index >= len(state["submodules"]) - 1:
         return "generate_quiz"
     
     # Vérifier si la prochaine leçon est dans un module différent
-    current_module = state.submodules[current_index]["module_id"]
-    next_module = state.submodules[current_index + 1]["module_id"]
+    current_module = state["submodules"][current_index]["module_id"]
+    next_module = state["submodules"][current_index + 1]["module_id"]
     
     if current_module != next_module:
         return "generate_quiz"
