@@ -1,5 +1,5 @@
 # features/auth/router.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from src.supabase_client import supabase
 from .dependencies import get_current_user
 from . import schema
@@ -178,4 +178,50 @@ def signin_user(credentials: schema.UserCredentials):
         return {"access_token": response.session.access_token, "token_type": "bearer"}
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sign-in failed: Invalid credentials.")
+    
+
+@router.post("/request-password-reset")
+async def request_password_reset(
+    req: schema.PasswordResetRequest,
+    http_request: Request
+):
+    """
+    Déclenche l'envoi d'un e-mail de réinitialisation de mot de passe à l'utilisateur.
+    """
+    # L'URL de redirection doit être configurée dans vos templates d'email Supabase.
+    # Par exemple : http://localhost:5173/reset-password
+    try:
+        supabase.auth.reset_password_for_email(
+            email=req.email,
+        )
+        # Pour le développement, vous pouvez logger un message. 
+        # En production, l'e-mail est envoyé par Supabase.
+        print(f"Password reset email requested for: {req.email}")
+        return {"message": "Si un compte avec cet e-mail existe, un lien de réinitialisation a été envoyé."}
+    except Exception as e:
+        # Ne révélez pas si l'email existe ou non pour des raisons de sécurité.
+        print(f"Error during password reset request: {e}")
+        return {"message": "Si un compte avec cet e-mail existe, un lien de réinitialisation a été envoyé."}
+
+
+@router.post("/reset-password", dependencies=[Depends(get_current_user)])
+def reset_password(
+    req: schema.PasswordResetPayload,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Met à jour le mot de passe de l'utilisateur.
+    Cette route est protégée et ne fonctionne que si l'utilisateur a un token de session valide
+    (obtenu en cliquant sur le lien de réinitialisation).
+    """
+    try:
+        # Le `get_current_user` garantit que nous avons un utilisateur authentifié
+        # via le token obtenu après avoir cliqué sur le lien de réinitialisation.
+        supabase.auth.update_user({
+            "password": req.password
+        })
+        return {"message": "Votre mot de passe a été mis à jour avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to reset password: {e}")
+
 
