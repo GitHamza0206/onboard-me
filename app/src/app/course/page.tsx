@@ -6,6 +6,7 @@ import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
 import { SupportChat } from "@/components/course/support-chat";
 import { getFormationDetails, FormationData, LessonData } from "@/api/formations";
+import { BackHeader } from "@/components/layout/BackHeader"; // Import du header
 
 export function OnboardingPage() {
   // Get courseId from the URL and auth token
@@ -45,7 +46,7 @@ export function OnboardingPage() {
     };
 
     fetchCourse();
-  }, [courseId, token]); // Refetch if courseId or token changes
+  }, [courseId, token]);
 
   // Display loading state
   if (isLoading) {
@@ -67,30 +68,34 @@ export function OnboardingPage() {
   
   // Display a message if no course data could be loaded
   if (!formation) {
-     return (
+      return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-xl">Could not load the course data.</p>
       </div>
     );
   }
 
+  // 👇 MODIFICATION: La structure de la page inclut maintenant le header
   return (
-    <div className="flex h-screen bg-white text-gray-800">
-      {/* Course Navigation (Left) */}
-      <CourseNav
-        courseTitle={formation.title}
-        modules={formation.modules}
-        activeLessonId={activeLesson?.id}
-        onSelectLesson={setActiveLesson}
-      />
-      
-      {/* Main Content (Center) */}
-      <CourseContent
-        lesson={activeLesson}
-      />
+    <div className="flex h-screen w-full flex-col">
+      <BackHeader />
+      <main className="flex flex-1 min-h-0 w-full">
+        {/* Course Navigation (Left) */}
+        <CourseNav
+          courseTitle={formation.title}
+          modules={formation.modules}
+          activeLessonId={activeLesson?.id}
+          onSelectLesson={setActiveLesson}
+        />
+        
+        {/* Main Content (Center) */}
+        <CourseContent
+          lesson={activeLesson}
+        />
 
-      {/* Support Chat (Right) */}
-      <SupportChat />
+        {/* Support Chat (Right) */}
+        <SupportChat />
+      </main>
     </div>
   );
 }
