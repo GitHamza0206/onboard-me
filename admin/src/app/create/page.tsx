@@ -24,6 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/authContext";
 import { useNavigate } from "react-router-dom";
+import { ContextPopup } from "@/components/create/ContextPopup";
+import { useDocumentManagement } from "@/hooks/useDocumentManagement";
 
 
 interface Message {
@@ -41,7 +43,10 @@ export function CreatePage() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [confidenceScore, setConfidenceScore] = useState(0);
   const [showGenerateButton, setShowGenerateButton] = useState(false);
+  const [showContextPopup, setShowContextPopup] = useState(false);
+  const [contextQuery, setContextQuery] = useState("");
   const { token } = useAuth();
+  const { documents } = useDocumentManagement();
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const navigate = useNavigate();
 
@@ -63,6 +68,33 @@ export function CreatePage() {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleTopicChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setTopic(value);
+    const atIndex = value.lastIndexOf("@");
+
+    if (atIndex !== -1) {
+      const query = value.substring(atIndex + 1);
+      if (!query.includes(" ")) {
+        setShowContextPopup(true);
+        setContextQuery(query);
+      } else {
+        setShowContextPopup(false);
+      }
+    } else {
+      setShowContextPopup(false);
+    }
+  };
+
+  const handleContextSelect = (item: string) => {
+    const atIndex = topic.lastIndexOf("@");
+    if (atIndex !== -1) {
+      const newTopic = `${topic.substring(0, atIndex)}@${item} `;
+      setTopic(newTopic);
+    }
+    setShowContextPopup(false);
+  };
 
   const sendMessage = (text: string) => {
     if (!text.trim() || isStreaming) return;
@@ -147,7 +179,7 @@ export function CreatePage() {
     return res.json();           // {title:"...", modules:[...]}
   }
 
-  async function saveFormation(structure: any) {
+  async function saveFormation(structure:  Record<string, unknown>) {
     const res = await fetch(`${apiUrl}/formations/`, {
       method: "POST",
       headers: {
@@ -172,8 +204,8 @@ export function CreatePage() {
         title: "Formation créée",
         description: `ID #${created.id} – ${created.nom}`
       });
-    } catch (e: any) {
-      console.log({ variant: "destructive", title: "Erreur", description: e.message });
+    } catch (e: unknown) {
+      console.log({ variant: "destructive", title: "Erreur", description: e instanceof Error ? e.message : "An unknown error occurred" });
     } finally {
       setIsStreaming(false);
     }
@@ -206,14 +238,21 @@ export function CreatePage() {
                     <Label htmlFor="topic-input" className="sr-only">
                       Describe your idea
                     </Label>
-                    <div className="flex flex-col w-full rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring">
+                    <div className="relative flex flex-col w-full rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring">
                       <Textarea
                         id="topic-input"
                         placeholder="describe your idea here..."
                         value={topic}
-                        onChange={(e) => setTopic(e.target.value)}
+                        onChange={handleTopicChange}
                         className="h-56 text-base border-0 shadow-none focus-visible:ring-0"
                       />
+                      {showContextPopup && (
+                        <ContextPopup
+                          onSelect={handleContextSelect}
+                          query={contextQuery}
+                          documents={documents}
+                        />
+                      )}
                       <div className="px-3 py-2 text-sm text-muted-foreground border-t">
                         @reference your context
                       </div>

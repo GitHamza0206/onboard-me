@@ -18,5 +18,6 @@ dependencies = [
     "PyJWT[crypto]",
     "langchain-mistralai>=0.2.10",
     "unstructured[pdf,pptx]",
-    "pytesseract"
+    "pytesseract",
+    "composio>=0.1.1",
 ]
