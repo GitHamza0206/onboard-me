@@ -6,7 +6,8 @@ import json
 import asyncio
 from langchain_core.messages import HumanMessage
 from src.features.auth.dependencies import get_current_user, get_current_admin_user
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Body
+from src.features.creator_agent.service.graph_generate_content import graph as content_graph
 
 from src.features.creator_agent.service.graph import graph
 
@@ -512,3 +513,26 @@ async def generate_structure(
         )
 
     return result["course_structure"]   # <- pur JSON
+
+
+
+class GenerateContentRequest(BaseModel):
+    structure: Dict[str, Any]
+
+@router.post("/content", status_code=200)
+async def generate_all_lessons(
+    req: GenerateContentRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lance la génération du contenu pédagogique pour chaque leçon (submodule).
+    """
+    try:
+        state = {"course_structure": req.structure}
+        result = await content_graph.ainvoke(state)
+        return {
+            "message": "Contenu généré avec succès.",
+            "html_by_lesson_id": result["outputs"]  # format: {lesson_id: "<h2>...</h2>"}
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

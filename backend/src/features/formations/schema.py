@@ -18,6 +18,7 @@ class ModuleStructure(BaseModel):
 
 class FormationStructureCreate(BaseModel):
     title: str
+    has_content: bool = Field(default=False, alias="has_content")
     modules: List[ModuleStructure]
 
 # --- SCHÉMAS EXISTANTS ---
@@ -29,3 +30,12 @@ class Formation(BaseModel):
 class UserFormationAssign(BaseModel):
     user_id: UUID
     formation_id: int
+    
+class ModuleUpdate(BaseModel):
+    titre: str | None = None
+    index: int | None = None   
+    
+class SubmoduleUpdate(BaseModel):
+    titre: str | None = None
+    description: str | None = None
+    index: int | None = None

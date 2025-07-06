@@ -7,6 +7,7 @@ from settings import P_LOGGER
 
 from src.features.auth.router import router as auth_router
 from src.features.formations.router import router as formations_router 
+from src.features.formations.router import router_modules, router_sb
 from src.features.admin.router import router as admin_router
 from src.features.formations.router import router as formations_router
 from src.features.documents.router import router as documents_router 
@@ -50,6 +51,8 @@ def create_app() -> FastAPI:
     app.include_router(formations_router)
     app.include_router(documents_router) 
     app.include_router(creator_agent_router)
+    app.include_router(router_sb)
+    app.include_router(router_modules)
 
 
     # Ajout du middleware CORS

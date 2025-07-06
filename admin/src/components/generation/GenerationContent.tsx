@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { updateModule, updateSubmodule } from "@/lib/api";
 
 // --- Types and Initial Data ---
 type Lesson = { id: number | string; title: string; description: string };
@@ -113,17 +114,24 @@ export function GenerationContent({
     })();
   }, [courseId, token]);
 
-   if (loading) return <div className="p-8">Loading…</div>;
+  if (loading) return <div className="p-8">Loading…</div>;
 
   // --- Handlers ---
   const handleDeleteModule = (moduleId: Module['id']) => setCourse(c => c.filter(m => m.id !== moduleId));
   const handleDeleteLesson = (moduleId: Module['id'], lessonId: Lesson['id']) => {
     setCourse(c => c.map(m => m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m));
   };
-  const handleUpdateModuleTitle = (moduleId: Module['id'], newTitle: string) => {
+
+  const handleUpdateModuleTitle = async (moduleId: Module["id"], newTitle: string) => {
     setCourse(c => c.map(m => m.id === moduleId ? { ...m, title: newTitle } : m));
     setEditingModuleId(null);
+    try {
+      await updateModule(token!, moduleId, { titre: newTitle });
+    } catch (err) {
+      console.error("DB update failed", err);
+    }
   };
+
   const handleOpenNewLessonModal = (moduleId: Module['id']) => {
     setCurrentModuleId(moduleId);
     setEditingLesson({ id: Date.now().toString(), title: "", description: "" });
@@ -132,7 +140,7 @@ export function GenerationContent({
     setCurrentModuleId(moduleId);
     setEditingLesson(lesson);
   };
-  const handleSaveLesson = () => {
+  const handleSaveLesson = async () => {
     if (!editingLesson || currentModuleId === null) return;
     setCourse(currentCourse => currentCourse.map(module => {
       if (module.id === currentModuleId) {
@@ -146,39 +154,70 @@ export function GenerationContent({
     }));
     setEditingLesson(null);
     setCurrentModuleId(null);
+    try {
+      await updateSubmodule(token!, editingLesson.id, {
+        titre: editingLesson.title,
+        description: editingLesson.description,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
   const handleAddNewModule = () => {
     const newModule: Module = { id: Date.now(), title: "New Module (click to edit)", lessons: [] };
     setCourse(currentCourse => [...currentCourse, newModule]);
   };
 
+  function reorderModules(newOrder: Module[]) {
+    setCourse(newOrder);                                 // rendu immédiat
+    newOrder.forEach((m, idx) =>
+      updateModule(token!, m.id, { index: idx })         // PATCH /modules/:id
+    );
+  }
+
+
+  function reorderLessons(targetModule: Module) {
+    setCourse(c => c.map(m => (m.id === targetModule.id ? targetModule : m)));
+    targetModule.lessons.forEach((l, idx) =>
+      updateSubmodule(token!, l.id, { index: idx })      // PATCH /submodules/:id
+    );
+  }
+  
   // --- Drag and Drop Handlers ---
   function handleDragStart(event: DragStartEvent) {
     setActiveDragId(event.active.id);
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActiveDragId(null); // Reset active drag id
+    setActiveDragId(null);
+
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
     const isModuleDrag = course.some(c => c.id === active.id);
 
     if (isModuleDrag) {
-      setCourse(items => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      // réordonner les modules
+      const reordered = arrayMove(course,                       // tableau d’origine
+        course.findIndex(i => i.id === active.id),
+        course.findIndex(i => i.id === over.id));
+      reorderModules(reordered);                                // 👈 persistence
     } else {
-      setCourse(currentCourse => {
-        const moduleContainingLesson = currentCourse.find(m => m.lessons.some(l => l.id === active.id));
-        if (!moduleContainingLesson) return currentCourse;
-        const oldIndex = moduleContainingLesson.lessons.findIndex(l => l.id === active.id);
-        const newIndex = moduleContainingLesson.lessons.findIndex(l => l.id === over.id);
-        const reorderedLessons = arrayMove(moduleContainingLesson.lessons, oldIndex, newIndex);
-        return currentCourse.map(m => m.id === moduleContainingLesson.id ? { ...m, lessons: reorderedLessons } : m);
-      });
+      // réordonner les leçons dans le module concerné
+      const moduleIdx = course.findIndex(m =>
+        m.lessons.some(l => l.id === active.id),
+      );
+      if (moduleIdx === -1) return;
+
+      const mod = course[moduleIdx];
+      const reorderedLessons = arrayMove(
+        mod.lessons,
+        mod.lessons.findIndex(l => l.id === active.id),
+        mod.lessons.findIndex(l => l.id === over.id),
+      );
+
+      const updatedModule = { ...mod, lessons: reorderedLessons };
+      reorderLessons(updatedModule);                            // 👈 persistence
     }
   }
 

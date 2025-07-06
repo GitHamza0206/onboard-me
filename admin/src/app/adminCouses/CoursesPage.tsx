@@ -8,43 +8,81 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { useEffect, useState } from "react";
+import { useAuth } from "@/app/auth/authContext";
+import { useNavigate } from "react-router-dom";
 
-const courses = [
-  { title: "Introduction to Project Management", lastUpdated: "July 15, 2024", imageUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" },
-  { title: "Advanced Data Analysis", lastUpdated: "July 10, 2024", imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop" },
-  { title: "Effective Communication Strategies", lastUpdated: "July 5, 2024", imageUrl: "https://images.unsplash.com/photo-1587560699334-cc426240a398?q=80&w=2070&auto=format&fit=crop" },
-  { title: "Team Leadership and Collaboration", lastUpdated: "June 28, 2024", imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop" },
-  { title: "Financial Planning for Startups", lastUpdated: "June 20, 2024", imageUrl: "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?q=80&w=2089&auto=format&fit=crop" },
-  { title: "Digital Marketing Fundamentals", lastUpdated: "June 12, 2024", imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2015&auto=format&fit=crop" },
-];
-
+interface Formation {
+  id: number;
+  nom: string;
+  has_content: boolean;
+  updated_at?: string;
+  cover_url?: string;
+}
 
 export function CoursesPage() {
+  const { token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  const [courses, setCourses] = useState<Formation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    fetch(`${apiUrl}/formations/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Impossible de récupérer les formations");
+        return res.json();
+      })
+      .then(setCourses)
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, [apiUrl, token]);
+
+  useEffect(() => {
+    console.log("Courses loaded:", courses);
+  }, [courses]);
+
+  const placeholder =
+    "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop";
+
   return (
     <SidebarProvider>
-    <AppSidebar />
-    <SidebarInset>
-    <main className="flex-1 p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Courses</h1>
-        <Button>Create New Course</Button>
-      </div>
+      <AppSidebar />
+      <SidebarInset>
+        <main className="flex-1 p-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">My Courses</h1>
+            <Button onClick={() => navigate("/create")}>Create New Course</Button>
+          </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="ghost">All Courses</Button>
-        <Button variant="ghost" className="text-muted-foreground">Draft</Button>
-        <Button variant="ghost" className="text-muted-foreground">Published</Button>
-      </div>
+          {/* onglets de filtre éventuels … */}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {courses.map(course => (
-          <CourseCard key={course.title} {...course} />
-        ))}
-      </div>
-      
-      <RecentActivityList />
-    </main>
-    </SidebarInset>
+          {loading ? (
+            <p className="text-muted-foreground">Chargement…</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {courses.map(c => (
+                <CourseCard
+                  key={c.id}
+                  title={c.nom}
+                  lastUpdated={
+                    c.updated_at ? new Date(c.updated_at).toLocaleDateString() : ""
+                  }
+                  imageUrl={c.cover_url || placeholder}
+                  onClick={() => navigate(`/generation/${c.id}`)}
+                />
+              ))}
+            </div>
+          )}
+
+          <RecentActivityList />
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
