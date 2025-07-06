@@ -59,7 +59,7 @@ export interface StreamCallbacks {
  * @param topic - The topic or message to send to the agent.
  * @param callbacks - An object containing callback functions to handle stream events.
  */
-export const streamAgentResponse = async (text: string, threadId: string | null, callbacks: StreamCallbacks) => {
+export const streamAgentResponse = async (text: string, threadId: string | null, token: string | null, callbacks: StreamCallbacks) => {
   const { onMessage, onValues, onError, onClose } = callbacks;
 
   try {
@@ -67,6 +67,7 @@ export const streamAgentResponse = async (text: string, threadId: string | null,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
         input: {
