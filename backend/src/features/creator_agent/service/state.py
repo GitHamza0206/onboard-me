@@ -12,7 +12,7 @@ class State(TypedDict):
 
     user_id: Optional[str] = None
     knowledge: Optional[str] = None
-    confidence_score: int = 0
+    confidence_score: Optional[int] = None
     course_structure: Optional[Dict[str, Any]] = None
     
     submodules: Optional[List[Dict[str, Any]]] = None

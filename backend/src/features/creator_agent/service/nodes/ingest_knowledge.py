@@ -117,9 +117,7 @@ def ingest_knowledge(state: State) -> Dict[str, str]:
                 print(f"Error fetching user documents for @-mentions: {e}")
                 ingested_content.append("Error processing document mentions.")
 
-    if not ingested_content:
-        print("No content was ingested.")
-        return {}
+
     
     current_knowledge = state.get("knowledge", "") or ""
     
@@ -131,8 +129,6 @@ def ingest_knowledge(state: State) -> Dict[str, str]:
     
     print("---FINISHED INGESTING KNOWLEDGE---")
     
-    output = {"knowledge": updated_knowledge}
-    if "user_id" in state:
-        output["user_id"] = state["user_id"]
+    output = {"knowledge": updated_knowledge, **state}
         
     return output
