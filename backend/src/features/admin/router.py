@@ -2,12 +2,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from src.supabase_client import supabase
 from src.features.auth.dependencies import get_current_admin_user
+from src.features.formations.schema import Formation as FormationSchema
 from . import schema
 from uuid import UUID
 from typing import List
 import secrets 
 import string 
-from datetime import datetime
 
 router = APIRouter(
     prefix="/admin",
@@ -128,3 +128,72 @@ async def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to retrieve users: {e}")
+    
+@router.get("/users/{user_id}/formations", response_model=List[FormationSchema])
+def get_user_assigned_formations(user_id: UUID, admin_user: dict = Depends(get_current_admin_user)):
+    """
+    (Admin only) Gets all formations assigned to a specific user.
+    """
+    try:
+        user_formations_response = supabase.table('user_formations').select('formation_id').eq('user_id', user_id).execute()
+        if not user_formations_response.data:
+            return []
+        
+        formation_ids = [item['formation_id'] for item in user_formations_response.data]
+        
+        formations = supabase.table('formations').select('id, nom').in_('id', formation_ids).execute()
+        return formations.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/users/{user_id}/formations/{formation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unassign_formation_from_user(user_id: UUID, formation_id: int, admin_user: dict = Depends(get_current_admin_user)):
+    """
+    (Admin only) Removes an assigned formation from a user.
+    """
+    try:
+        (supabase.table('user_formations')
+            .delete()
+            .match({'user_id': str(user_id), 'formation_id': formation_id})
+            .execute())
+        return
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: UUID, admin_user: dict = Depends(get_current_admin_user)):
+    """
+    (Admin only) Deletes a user and all their related data from the application layer.
+    """
+    try:
+        user_id_str = str(user_id)
+
+        # --- Step 1: Clear all known dependencies on the user ---
+
+        # Set creator_id to NULL in 'formations'
+        supabase.table('formations').update({'creator_id': None}).eq('creator_id', user_id_str).execute()
+        
+        # Delete documents created by the user
+        supabase.table('documents').delete().eq('profile_id', user_id_str).execute()
+        
+        # Delete quiz attempts
+        supabase.table('user_quiz_attempts').delete().eq('user_id', user_id_str).execute()
+        
+        # Delete course assignments
+        supabase.table('user_formations').delete().eq('user_id', user_id_str).execute()
+        
+        # Delete management records
+        supabase.table('managed_users').delete().eq('user_id', user_id_str).execute()
+        supabase.table('managed_users').delete().eq('manager_id', user_id_str).execute()
+
+        # --- Step 2: Delete the user from Supabase Auth ---
+        # THE FIX: Ensure user_id is a string for this call.
+        supabase.auth.admin.delete_user(user_id_str)
+        
+        return
+
+    except Exception as e:
+        print(f"Error deleting user {str(user_id)}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
