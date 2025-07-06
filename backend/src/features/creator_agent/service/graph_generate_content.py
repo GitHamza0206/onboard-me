@@ -14,7 +14,7 @@ workflow.add_node("save", save)
 
 # ↓↓↓  Logique de boucle
 def has_more(state: State) -> str:
-    if state.current_index + 1 < len(state.submodules):
+    if state.current_index < len(state.submodules):
         return "loop"
     return END
 
