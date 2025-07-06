@@ -35,19 +35,23 @@ def create_user_as_admin(
     temp_password = generate_temporary_password()
 
     try:
+        print("--- CREATING USER AS ADMIN ---")
         created_user_response = supabase.auth.admin.create_user({
             "email": new_user_data.email,
-            "password": "thomasestlemeilleur",
+            "password": "tototiti",
             "email_confirm": True
         })
+        
         new_user = created_user_response.user
         new_user_id = new_user.id
-
+        print(f"--- NEW USER ID: {new_user_id} ---")
         supabase.table('profiles').update({
             "prenom": new_user_data.prenom,
             "nom": new_user_data.nom
         }).eq('id', new_user_id).execute()
 
+        # Associate the new user with the admin
+        print(f"--- ASSOCIATING USER {new_user_id} WITH ADMIN {admin_id}")
         supabase.table('managed_users').insert({
             "manager_id": admin_id,
             "user_id": new_user_id
