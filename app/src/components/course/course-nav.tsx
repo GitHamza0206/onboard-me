@@ -37,6 +37,9 @@ export function CourseNav({
       if (parentModule) {
         setOpenModuleId(parentModule.id);
       }
+    } else if (modules.length > 0) {
+      // Open the first module by default if no lesson is active
+      setOpenModuleId(modules[0].id);
     }
   }, [activeLessonId, modules]);
 
@@ -56,18 +59,22 @@ export function CourseNav({
             onValueChange={setOpenModuleId}
           >
             {modules.map((module) => (
-              <AccordionItem value={module.id} key={module.id}>
-                <AccordionTrigger className="text-sm font-semibold hover:no-underline p-2">
+              <AccordionItem value={module.id} key={module.id} className="border-b-0">
+                <AccordionTrigger className="text-sm font-semibold hover:no-underline p-2 text-left">
                   {module.title}
                 </AccordionTrigger>
                 <AccordionContent>
                   <ul className="pl-4 mt-1 space-y-1">
                     {module.lessons.map((lesson) => (
                       <li key={lesson.id}>
-                        <button
+                        {/* 👇 MODIFICATION ICI: <button> est remplacé par <div> */}
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => onSelectLesson(lesson)}
+                          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectLesson(lesson)}
                           className={cn(
-                            "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm",
+                            "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm cursor-pointer", // Ajout de cursor-pointer
                             lesson.id === activeLessonId
                               ? "bg-primary/10 text-primary font-medium"
                               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -75,15 +82,15 @@ export function CourseNav({
                         >
                           <Circle
                             className={cn(
-                              "w-2 h-2",
+                              "w-2 h-2 shrink-0", // Ajout de shrink-0 pour éviter la déformation
                               lesson.id === activeLessonId
                                 ? "text-primary"
                                 : "text-gray-400"
                             )}
                             fill="currentColor"
                           />
-                          {lesson.title}
-                        </button>
+                          <span>{lesson.title}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
