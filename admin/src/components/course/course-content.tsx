@@ -78,6 +78,44 @@ interface CourseContentProps {
   moduleTitle?: string;
 }
 
+// Utility function to extract HTML from markdown code blocks
+const extractHtmlFromMarkdown = (content: string): string => {
+  // Check if content is wrapped in ```html code block
+  const htmlBlockRegex = /^```html\s*\n([\s\S]*?)\n```$/;
+  const match = content.match(htmlBlockRegex);
+  
+  if (match) {
+    return match[1]; // Return the HTML content inside the code block
+  }
+  
+  // Check for other variations like just ```\n<html>
+  const codeBlockRegex = /^```\s*\n([\s\S]*?)\n```$/;
+  const codeMatch = content.match(codeBlockRegex);
+  
+  if (codeMatch && codeMatch[1].trim().startsWith('<')) {
+    return codeMatch[1]; // Return the HTML-like content
+  }
+  
+  return content; // Return as-is if not wrapped in code block
+};
+
+// Check if lesson content is empty or just placeholder
+const isContentEmpty = (content: string | null): boolean => {
+  if (!content) return true;
+  
+  const trimmed = content.trim();
+  if (!trimmed) return true;
+  
+  // Check for default placeholder content
+  const placeholderPatterns = [
+    /^<h1>Sélectionnez une leçon pour commencer\.?<\/h1>$/i,
+    /^<p>.*?placeholder.*?<\/p>$/i,
+    /^null$/i,
+  ];
+  
+  return placeholderPatterns.some(pattern => pattern.test(trimmed));
+};
+
 export function CourseContent({
   className,
   content,
@@ -91,9 +129,13 @@ export function CourseContent({
     moduleTitle || ''
   );
 
+  // Process content to extract HTML if it's wrapped in markdown
+  const processedContent = content ? extractHtmlFromMarkdown(content) : '';
+  const isEmpty = isContentEmpty(content);
+
   const editor = useEditor({
     extensions: tiptapExtensions,
-    content: content,
+    content: processedContent,
     onUpdate: ({ editor }) => {
       setContent(editor.getHTML());
     },
@@ -101,10 +143,10 @@ export function CourseContent({
 
   // Synchroniser le contenu si la prop change (ex: navigation entre leçons)
   useEffect(() => {
-    if (editor && editor.getHTML() !== content) {
-      editor.commands.setContent(content);
+    if (editor && editor.getHTML() !== processedContent) {
+      editor.commands.setContent(processedContent);
     }
-  }, [content, editor]);
+  }, [processedContent, editor]);
 
   if (!editor) {
     return null;
@@ -136,6 +178,40 @@ export function CourseContent({
                 </p>
               </div>
             )}
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  }
+
+  // Show placeholder when content is empty
+  if (isEmpty && currentLesson) {
+    return (
+      <div className={cn("flex-1 bg-white flex flex-col h-full", className)}>
+        <ScrollArea className="flex-1">
+          <div className="max-w-4xl mx-auto p-8 text-center">
+            <div className="py-16">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {currentLesson.title}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {currentLesson.description}
+              </p>
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-amber-50 text-amber-700 text-sm">
+                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Contenu en cours de génération...
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Le contenu de cette leçon sera généré automatiquement et apparaîtra ici une fois prêt.
+              </p>
+            </div>
           </div>
         </ScrollArea>
       </div>

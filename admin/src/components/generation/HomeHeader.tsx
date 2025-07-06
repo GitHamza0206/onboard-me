@@ -1,16 +1,18 @@
 // src/components/generation/HomeHeader.tsx
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Save } from "lucide-react";
+import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { EditableTitle } from "../editor/EditableTitle";
 
 interface HomeHeaderProps {
   title: string;
   setTitle: (title: string) => void;
   onSave: () => void;
+  isRefreshing?: boolean;
+  onRefresh?: () => void;
 }
 
-export function HomeHeader({ title, setTitle, onSave }: HomeHeaderProps) {
+export function HomeHeader({ title, setTitle, onSave, isRefreshing, onRefresh }: HomeHeaderProps) {
   const navigate = useNavigate();
 
   return (
@@ -35,11 +37,24 @@ export function HomeHeader({ title, setTitle, onSave }: HomeHeaderProps) {
           />
         </div>
 
-        {/* Right Aligned Button */}
-        <Button variant="outline" onClick={onSave}>
-          <Save className="mr-2 h-4 w-4" />
-          <span>Save</span>
-        </Button>
+        {/* Right Aligned Buttons */}
+        <div className="flex items-center gap-2">
+          {onRefresh && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
+          <Button variant="outline" onClick={onSave}>
+            <Save className="mr-2 h-4 w-4" />
+            <span>Save</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

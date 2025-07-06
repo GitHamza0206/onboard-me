@@ -39,12 +39,58 @@ interface OnboardingPageProps {
 export function OnboardingPage({ formation }: OnboardingPageProps) {
   const { courseId } = useParams(); // Obtenir l'ID du cours depuis l'URL
   const { token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const [courseTitle, setCourseTitle] = useState(formation.title);
   // Injecter les quiz dans les modules pour l'affichage
   const [modules, setModules] = useState(injectQuizLessonsForAdmin(formation).modules);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+
+  // Function to refresh course data
+  const refreshCourseData = async () => {
+    if (!courseId || !token || isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`${apiUrl}/formations/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Impossible de récupérer la formation");
+
+      const data = await res.json();
+      const updatedFormation = injectQuizLessonsForAdmin(data);
+      setModules(updatedFormation.modules);
+      setCourseTitle(data.title);
+      
+      // Update active lesson if it exists in the refreshed data
+      if (activeLesson) {
+        const updatedLesson = updatedFormation.modules
+          .flatMap(m => m.lessons)
+          .find(l => l.id === activeLesson.id);
+        if (updatedLesson) {
+          setActiveLesson(updatedLesson);
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to refresh course data:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Auto-refresh every 5 seconds if there are lessons with empty content
+  useEffect(() => {
+    const hasEmptyLessons = modules.some(module => 
+      module.lessons.some(lesson => !lesson.content || lesson.content.trim() === '')
+    );
+
+    if (hasEmptyLessons) {
+      const interval = setInterval(refreshCourseData, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [modules, courseId, token, isRefreshing]);
 
   // Fonction pour obtenir le titre du module d'une leçon
   const getModuleTitle = (lessonId: string): string => {
@@ -109,7 +155,13 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
 
   return (
     <div className="flex h-screen bg-white text-gray-800 flex-col">
-      <HomeHeader title={courseTitle} setTitle={setCourseTitle} onSave={handleSave} />
+      <HomeHeader 
+        title={courseTitle} 
+        setTitle={setCourseTitle} 
+        onSave={handleSave}
+        isRefreshing={isRefreshing}
+        onRefresh={refreshCourseData}
+      />
       <div className="flex-1 overflow-hidden flex">
         <CourseNav
           modules={modules}

@@ -19,6 +19,7 @@ interface LessonData {
   id: string; 
   title: string; 
   type?: 'lesson' | 'quiz';
+  content?: string | null; // Add content field to check if lesson is generated
 }
 interface ModuleData { id: string; title: string; lessons: LessonData[]; }
 
@@ -28,6 +29,23 @@ interface CourseNavProps {
   activeLessonId?: string | null;
   onSelectLesson: (lesson: LessonData) => void;
 }
+
+// Utility function to check if lesson content is empty or loading
+const isLessonContentEmpty = (content: string | null): boolean => {
+  if (!content) return true;
+  
+  const trimmed = content.trim();
+  if (!trimmed) return true;
+  
+  // Check for placeholder content
+  const placeholderPatterns = [
+    /^<h1>Sélectionnez une leçon pour commencer\.?<\/h1>$/i,
+    /^<p>.*?placeholder.*?<\/p>$/i,
+    /^null$/i,
+  ];
+  
+  return placeholderPatterns.some(pattern => pattern.test(trimmed));
+};
  
 export function CourseNav({ className, modules, activeLessonId, onSelectLesson }: CourseNavProps) {
   
@@ -73,19 +91,26 @@ export function CourseNav({ className, modules, activeLessonId, onSelectLesson }
                   <ul className="pl-4 mt-1 space-y-1">
                     {module.lessons.map((lesson) => {
                       const isQuiz = isQuizLesson(lesson);
+                      const isEmpty = isLessonContentEmpty(lesson.content);
+                      const isLoading = !isQuiz && isEmpty;
+                      
                       return (
                         <li key={lesson.id}>
                           <button
                             onClick={() => onSelectLesson(lesson)}
                             className={cn(
-                              "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm",
+                              "w-full text-left flex items-center gap-2 p-2 rounded-md text-sm relative",
                               lesson.id === activeLessonId
                                 ? isQuiz 
                                   ? "bg-orange-50 text-orange-700 font-medium border border-orange-200"
-                                  : "bg-primary/10 text-primary font-medium"
+                                  : isLoading
+                                    ? "bg-amber-50 text-amber-700 font-medium border border-amber-200"
+                                    : "bg-primary/10 text-primary font-medium"
                                 : isQuiz
                                   ? "text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                  : isLoading
+                                    ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                             )}
                           >
                             {isQuiz ? (
@@ -97,15 +122,42 @@ export function CourseNav({ className, modules, activeLessonId, onSelectLesson }
                                     : "text-orange-500"
                                 )}
                               />
+                            ) : isLoading ? (
+                              <svg
+                                className={cn(
+                                  "w-3 h-3 animate-spin",
+                                  lesson.id === activeLessonId
+                                    ? "text-amber-700"
+                                    : "text-amber-500"
+                                )}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                              </svg>
                             ) : (
                               <Circle
-                                className={cn("w-2 h-2", lesson.id === activeLessonId ? "text-primary" : "text-gray-400")}
+                                className={cn("w-2 h-2", lesson.id === activeLessonId ? "text-primary" : "text-green-500")}
                                 fill="currentColor"
                               />
                             )}
-                            <span className={isQuiz ? "font-medium" : ""}>
+                            <span className={cn(
+                              isQuiz || isLoading ? "font-medium" : "",
+                              isLoading ? "italic" : ""
+                            )}>
                               {lesson.title}
                             </span>
+                            {isLoading && (
+                              <span className="text-xs text-amber-600 ml-auto">
+                                Génération...
+                              </span>
+                            )}
                           </button>
                         </li>
                       );
