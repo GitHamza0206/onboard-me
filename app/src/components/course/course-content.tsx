@@ -130,13 +130,11 @@ export function CourseContent({
                     questions={quiz.questions}
                     quizId={quizId}
                     onComplete={(passed: boolean) => {
-                      console.log('Quiz completed for:', lesson.title, 'passed:', passed);
                       if (onQuizComplete) {
                         onQuizComplete(passed);
                       }
                     }}
                     onRetry={() => {
-                      console.log('Quiz retry for:', lesson.title);
                       // Recharger la page pour recommencer le quiz
                       window.location.reload();
                     }}

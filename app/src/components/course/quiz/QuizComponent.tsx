@@ -75,11 +75,8 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
     try {
       // Convertir les réponses au format API
       const submissionData = convertQuizAnswersToSubmission(quizId, selectedAnswers);
-      console.log('Soumission du quiz avec les données:', submissionData);
-      
-      // Soumettre le quiz à l'API
-      const result = await submitQuiz(token, submissionData);
-      console.log('Résultat du quiz reçu:', result);
+      const response = await submitQuiz(quizId, submissionData);
+      const result = await response.json();
       
       setQuizResult(result);
       setQuizCompleted(true);
@@ -207,12 +204,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
 
           <div className="flex justify-center space-x-4">
             {passed ? (
-              <Button onClick={() => {
-                console.log('Bouton Continuer cliqué, quiz réussi');
-                onComplete(true);
-              }} className="px-8">
-                Continuer <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              <Button onClick={() => onComplete(true)}>Continuer</Button>
             ) : (
               <div className="space-x-4">
                 {onRetry && (

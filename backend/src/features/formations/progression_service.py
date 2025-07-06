@@ -18,7 +18,7 @@ class ProgressionService:
             List[int]: Liste des IDs des modules accessibles
         """
         try:
-            print(f"🔍 Calcul des modules accessibles pour user_id={user_id}, formation_id={formation_id}")
+            
             # 1. Récupérer tous les modules de la formation, triés par index
             modules_response = supabase.table('formation_modules').select(
                 'modules(id, titre, index)'
@@ -31,7 +31,7 @@ class ProgressionService:
             modules = [fm['modules'] for fm in modules_response.data if fm['modules']]
             modules = sorted(modules, key=lambda m: m.get('index', 0))
             
-            print(f"📋 Modules trouvés: {[f'id={m['id']}, titre={m['titre']}, index={m.get('index', 0)}' for m in modules]}")
+            
             
             if not modules:
                 print("❌ Aucun module trouvé")
@@ -39,28 +39,28 @@ class ProgressionService:
             
             # 2. Le premier module est toujours accessible
             accessible_modules = [modules[0]['id']]
-            print(f"✅ Premier module accessible: {modules[0]['id']} ({modules[0]['titre']})")
+            
             
             # 3. Pour chaque module suivant, vérifier si le quiz du module précédent est réussi
             for i in range(1, len(modules)):
                 previous_module = modules[i-1]
                 current_module = modules[i]
                 
-                print(f"🔍 Vérification module {current_module['id']} ({current_module['titre']}) - précédent: {previous_module['id']}")
+                
                 
                 # Vérifier si l'utilisateur a réussi le quiz du module précédent
                 quiz_passed = ProgressionService._has_passed_module_quiz(user_id, previous_module['id'])
-                print(f"📊 Quiz du module précédent réussi: {quiz_passed}")
+                
                 
                 if quiz_passed:
                     accessible_modules.append(current_module['id'])
-                    print(f"✅ Module {current_module['id']} débloqué")
+                    
                 else:
-                    print(f"❌ Module {current_module['id']} bloqué - quiz précédent non réussi")
+                    
                     # Si le quiz précédent n'est pas réussi, arrêter la progression
                     break
             
-            print(f"🎯 Modules accessibles finaux: {accessible_modules}")
+            
             return accessible_modules
             
         except Exception as e:
@@ -80,7 +80,7 @@ class ProgressionService:
             bool: True si l'utilisateur a réussi le quiz, False sinon
         """
         try:
-            print(f"🎯 Vérification quiz pour module_id={module_id}, user_id={user_id}")
+            
             
             # 1. Récupérer le quiz du module
             quiz_response = supabase.table('quizzes').select('id, passing_score').eq(
@@ -88,7 +88,7 @@ class ProgressionService:
             ).eq('is_active', True).execute()
             
             if not quiz_response.data:
-                print(f"❌ Aucun quiz trouvé pour le module {module_id}")
+                
                 # Pas de quiz pour ce module = ne peut pas être réussi
                 # Un module doit avoir un quiz pour débloquer le suivant
                 return False

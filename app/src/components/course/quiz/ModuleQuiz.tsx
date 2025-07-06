@@ -46,8 +46,8 @@ export const ModuleQuiz: React.FC<ModuleQuizProps> = ({
         <QuizComponent
           title={quizData.title}
           questions={quizData.questions}
-          onComplete={handleComplete}
-          onRetry={handleRetry}
+          onComplete={() => onComplete()}
+          onRetry={() => onRetry()}
         />
       </div>
     </div>

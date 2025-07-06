@@ -63,7 +63,6 @@ export function CourseNav({
           >
             {modules.map((module) => {
               const isModuleAccessible = module.is_accessible !== false;
-              console.log(`🔍 Module ${module.id} (${module.title}): is_accessible=${module.is_accessible}, computed=${isModuleAccessible}`);
               return (
                 <AccordionItem value={module.id} key={module.id} className="border-b-0">
                   <AccordionTrigger 

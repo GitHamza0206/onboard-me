@@ -62,23 +62,13 @@ export function OnboardingPage() {
   };
 
   const handleQuizComplete = async (passed: boolean) => {
-    console.log('🎯 handleQuizComplete appelée, passed:', passed);
-    
     if (passed) {
-      console.log('✅ Quiz réussi, rechargement de la formation...');
-      // Recharger la formation pour obtenir la progression mise à jour
       const updatedFormation = await refreshFormationData();
       
       if (updatedFormation) {
-        console.log('📊 Formation rechargée, modules accessibles:', updatedFormation.modules.length);
-        // Utiliser directement les nouvelles données pour naviguer
         navigateToNextLessonWithFormation(updatedFormation);
-      } else {
-        console.error('❌ Impossible de recharger la formation');
       }
-    } else {
-      console.log('❌ Quiz échoué, pas de navigation');
-    }
+    } 
   };
 
   // Function to refresh formation data (after quiz completion)
@@ -98,33 +88,21 @@ export function OnboardingPage() {
 
   // Navigation function that uses provided formation data
   const navigateToNextLessonWithFormation = (formationData: FormationWithProgression) => {
-    console.log('🧭 navigateToNextLessonWithFormation appelée');
     const allLessons = formationData.modules.flatMap(module => module.lessons);
-    console.log('📋 Toutes les leçons:', allLessons.map(l => l.id));
-    console.log('🎯 Leçon active actuelle:', activeLesson?.id);
     
     const currentIndex = allLessons.findIndex(lesson => lesson.id === activeLesson?.id);
-    console.log('📍 Index actuel:', currentIndex);
     
     if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
       const nextLesson = allLessons[currentIndex + 1];
-      console.log('➡️ Prochaine leçon:', nextLesson.id, nextLesson.title);
       
       // Vérifier si le module suivant est accessible dans les nouvelles données
       const isNextLessonAccessible = formationData.modules.some(module => 
         module.is_accessible !== false && module.lessons.some(lesson => lesson.id === nextLesson.id)
       );
       
-      console.log('🔓 Prochaine leçon accessible?', isNextLessonAccessible);
-      
       if (isNextLessonAccessible) {
-        console.log('✅ Navigation vers la prochaine leçon');
         setActiveLesson(nextLesson);
-      } else {
-        console.log('❌ Prochaine leçon non accessible:', nextLesson.id);
       }
-    } else {
-      console.log('🏁 Pas de leçon suivante ou index invalide');
     }
   };
 
@@ -139,12 +117,6 @@ export function OnboardingPage() {
       try {
         setIsLoading(true);
         const data = await getFormationWithProgression(token, courseId);
-        console.log('🔍 Formation récupérée avec progression:', data);
-        console.log('📋 Modules avec accessibilité:', data.modules.map(m => ({
-          id: m.id,
-          title: m.title,
-          is_accessible: m.is_accessible
-        })));
         setFormation(data);
         setProgression(data.progression);
 

@@ -13,9 +13,7 @@ export const QuizTestPage: React.FC = () => {
   };
 
   const handleQuizComplete = () => {
-    setQuizCompleted(true);
-    setShowQuiz(false);
-    console.log('Quiz terminé ! Passage au module suivant...');
+    // Logic to handle quiz completion, e.g., navigate to next module
   };
 
   const handleRetry = () => {
@@ -67,9 +65,7 @@ export const QuizTestPage: React.FC = () => {
                   <Button onClick={handleRetry} variant="outline">
                     Refaire le Quiz
                   </Button>
-                  <Button onClick={() => console.log('Passage au module suivant')}>
-                    Module Suivant
-                  </Button>
+                  <Button>Passage au module suivant</Button>
                 </div>
               </div>
             )}
