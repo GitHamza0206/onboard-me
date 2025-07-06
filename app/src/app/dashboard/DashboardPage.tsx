@@ -24,7 +24,7 @@ export function DashboardPage() {
             setIsLoading(true);
             try {
                 // Call the new endpoint
-                const response = await fetch(`${apiUrl}/users/me/formations`, {
+                const response = await fetch(`${apiUrl}/formations/users/me/formations`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error("Could not fetch assigned courses.");
