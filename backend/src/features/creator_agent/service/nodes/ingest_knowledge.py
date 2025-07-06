@@ -3,7 +3,7 @@ from typing import List
 from urllib.parse import urlparse
 
 from src.composio_client import composio, COMPOSIO_NOTION_AUTH_CONFIG_ID
-from .state import State
+from ..state import State
 
 
 def _extract_notion_page_id(url: str) -> str | None:
@@ -76,9 +76,9 @@ def ingest_knowledge(state: State) -> State:
                 # The user_id is set to the auth_config_id for Notion.
                 # This is a guess based on how Composio might identify the integration.
                 result = composio.tools.execute(
-                    "NOTION_GET_PAGE_CONTENT",
-                    user_id=COMPOSIO_NOTION_AUTH_CONFIG_ID,
-                    arguments={"page_id": page_id},
+                    "NOTION_FETCH_NOTION_BLOCK",
+                    user_id=state.user_id,
+                    arguments={"block_id": page_id},
                 )
                 print(f"Composio result: {result}")
                 ingested_content.append(str(result)) # Make sure it's a string
