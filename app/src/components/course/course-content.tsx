@@ -84,7 +84,6 @@ export function CourseContent({
     lesson?.type === 'quiz' ? lesson.moduleId : undefined
   );
 
-  // Hook pour l'éditeur Tiptap
   const editor = useEditor({
     editable: false,
     extensions: tiptapExtensions,
