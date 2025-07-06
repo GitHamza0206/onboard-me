@@ -4,6 +4,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { AdminQuizViewer } from "@/components/quiz/AdminQuizViewer";
+import { generateAdminSampleQuiz } from "@/components/quiz/sampleQuizData";
+import { isQuizLesson } from "@/utils/quizUtils";
 
 // --- Imports pour l'éditeur Tiptap ---
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
@@ -66,12 +69,21 @@ interface CourseContentProps {
   className?: string;
   content: string;
   setContent: (content: string) => void;
+  currentLesson?: {
+    id: string;
+    title: string;
+    type?: 'lesson' | 'quiz';
+    moduleId?: string;
+  };
+  moduleTitle?: string;
 }
 
 export function CourseContent({
   className,
   content,
   setContent,
+  currentLesson,
+  moduleTitle,
 }: CourseContentProps) {
   const editor = useEditor({
     extensions: tiptapExtensions,
@@ -90,6 +102,27 @@ export function CourseContent({
 
   if (!editor) {
     return null;
+  }
+
+  // Vérifier si on affiche un quiz
+  const isCurrentLessonQuiz = currentLesson && isQuizLesson(currentLesson);
+
+  if (isCurrentLessonQuiz) {
+    // Afficher le composant quiz
+    const quizData = generateAdminSampleQuiz(
+      moduleTitle || 'Module', 
+      currentLesson.moduleId || currentLesson.id
+    );
+
+    return (
+      <div className={cn("flex-1 bg-gray-50 flex flex-col h-full", className)}>
+        <ScrollArea className="flex-1">
+          <div className="p-8">
+            <AdminQuizViewer quiz={quizData} />
+          </div>
+        </ScrollArea>
+      </div>
+    );
   }
 
   return (
