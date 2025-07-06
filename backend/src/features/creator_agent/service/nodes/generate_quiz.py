@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List
 from shared.llm import llm
 from src.features.creator_agent.service.state import State
+import json
 
 
 class QuizAnswer(BaseModel):
@@ -80,12 +81,17 @@ Crée un quiz de 5 questions à choix multiples basé sur le contenu des leçons
     chain = prompt | llm | parser
     
     try:
+        print(f"--- Génération du quiz pour le module : {module_title} ---")
         quiz_data = chain.invoke({
             "lessons_content": lessons_text,
             "module_title": module_title,
             "format_instructions": parser.get_format_instructions()
         })
         
+        print(f"--- Quiz généré pour {module_title} ---")
+        # Utiliser json.dumps pour un affichage propre du JSON
+        print(json.dumps(quiz_data.model_dump(), indent=2, ensure_ascii=False))
+
         quiz_key = f"quiz_{current_module_id}"
         # FIX: Use dictionary key access for 'outputs'
         new_outputs = {**state['outputs'], quiz_key: quiz_data.model_dump_json()}

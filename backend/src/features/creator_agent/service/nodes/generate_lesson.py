@@ -29,7 +29,13 @@ def generate_lesson(state: State) -> State:
     outputs = state.get("outputs", {})
 
     sub = submodules[current_index]
+    
+    print(f"--- Génération de la leçon : {sub.get('lesson_title')} ---")
+    
     html = chain.invoke(sub)
+
+    print(f"--- Contenu HTML généré pour {sub.get('lesson_title')} ---")
+    print(html[:500] + "..." if len(html) > 500 else html) # Affiche un aperçu
 
     progress_msg = AIMessage(
         content=f"✅ Contenu généré pour {sub.get('lesson_id')} ({current_index + 1}/{len(submodules)})"
