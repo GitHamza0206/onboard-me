@@ -4,7 +4,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Trash2, PlusCircle } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { X, Trash2, PlusCircle, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/app/auth/authContext';
 import { useToast } from "@/hooks/use-toast";
 import { AssignFormationModal } from './AssignFormationModal';
@@ -22,6 +24,21 @@ interface User {
 interface Formation {
     id: number;
     nom: string;
+}
+
+interface ProgressDetails {
+    progress_percentage: number;
+    status: string;
+    total_formations: number;
+    total_quizzes: number;
+    completed_quizzes: number;
+    formations: {
+        id: number;
+        nom: string;
+        total_quizzes: number;
+        completed_quizzes: number;
+        progress_percentage: number;
+    }[];
 }
 
 interface UserDetailsDrawerProps {
@@ -43,6 +60,7 @@ export const UserDetailsDrawer = ({ user, isOpen, onClose, onUserDeleted }: User
 
     const [assignedFormations, setAssignedFormations] = useState<Formation[]>([]);
     const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [progressDetails, setProgressDetails] = useState<ProgressDetails | null>(null);
 
     const fetchAssignedFormations = async () => {
         if (!user || !token) return;
@@ -58,9 +76,24 @@ export const UserDetailsDrawer = ({ user, isOpen, onClose, onUserDeleted }: User
         }
     };
 
+    const fetchProgressDetails = async () => {
+        if (!user || !token) return;
+        try {
+            const response = await fetch(`${apiUrl}/admin/users/${user.id}/progress`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error("Failed to fetch user's progress.");
+            const data = await response.json();
+            setProgressDetails(data);
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Error", description: error.message });
+        }
+    };
+
     useEffect(() => {
         if (isOpen && user) {
             fetchAssignedFormations();
+            fetchProgressDetails();
         }
     }, [isOpen, user]);
 
@@ -74,6 +107,7 @@ export const UserDetailsDrawer = ({ user, isOpen, onClose, onUserDeleted }: User
             if (!response.ok) throw new Error("Failed to remove formation.");
             toast({ title: "✅ Success", description: "Formation has been unassigned." });
             fetchAssignedFormations(); // Refresh the list
+            fetchProgressDetails(); // Refresh progress details
         } catch (error: any) {
             toast({ variant: "destructive", title: "Error", description: error.message });
         }
@@ -117,6 +151,55 @@ export const UserDetailsDrawer = ({ user, isOpen, onClose, onUserDeleted }: User
                     </SheetHeader>
 
                     <div className="flex-grow p-6 overflow-y-auto">
+                        {/* Section Progression */}
+                        <div className="mb-6">
+                            <h3 className="mb-4 font-semibold text-lg flex items-center">
+                                <BarChart3 className="mr-2 h-5 w-5" />
+                                Quiz Progress
+                            </h3>
+                            {progressDetails ? (
+                                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">Overall Progress</span>
+                                        <Badge variant={progressDetails.status === "Terminé" ? "default" : progressDetails.status === "En cours" ? "secondary" : "destructive"}>
+                                            {progressDetails.status}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Progress value={progressDetails.progress_percentage} className="flex-1" />
+                                        <span className="text-sm text-muted-foreground">{progressDetails.progress_percentage}%</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <div className="text-muted-foreground">Formations</div>
+                                            <div className="font-medium">{progressDetails.total_formations}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-muted-foreground">Quizzes</div>
+                                            <div className="font-medium">{progressDetails.completed_quizzes}/{progressDetails.total_quizzes}</div>
+                                        </div>
+                                    </div>
+                                    {progressDetails.formations.length > 0 && (
+                                        <div className="mt-4">
+                                            <div className="text-sm font-medium mb-2">By Formation:</div>
+                                            <div className="space-y-2">
+                                                {progressDetails.formations.map(formation => (
+                                                    <div key={formation.id} className="flex items-center justify-between text-xs">
+                                                        <span className="truncate max-w-[150px]">{formation.nom}</span>
+                                                        <span className="text-muted-foreground">{formation.completed_quizzes}/{formation.total_quizzes} ({formation.progress_percentage}%)</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-muted/50 rounded-lg">
+                                    <p className="text-sm text-muted-foreground">Loading progress details...</p>
+                                </div>
+                            )}
+                        </div>
+
                         <h3 className="mb-4 font-semibold text-lg">Assigned Formations</h3>
                         <div className="space-y-2">
                             {assignedFormations.length > 0 ? (
@@ -164,6 +247,7 @@ export const UserDetailsDrawer = ({ user, isOpen, onClose, onUserDeleted }: User
                 onClose={() => {
                     setAssignModalOpen(false);
                     fetchAssignedFormations(); // Refresh list after closing assign modal
+                    fetchProgressDetails(); // Refresh progress details after closing assign modal
                 }}
                 userId={user.id}
                 userName={user.fullName}

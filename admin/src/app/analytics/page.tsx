@@ -1,4 +1,6 @@
 // src/app/analytics/page.tsx
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/auth/authContext";
 import {
     Card,
     CardContent,
@@ -28,40 +30,88 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { BookCopy, CircleCheck, GraduationCap, Users } from "lucide-react";
 
-// --- Données Mock pour les graphiques et tableaux ---
+interface KPIs {
+    total_users: number;
+    total_formations: number;
+    total_assigned: number;
+    completion_rate: number;
+    quiz_success_rate: number;
+}
 
-const barChartData = [
-    { name: "Intro. Mgt. Projet", "Taux de complétion": 85 },
-    { name: "Analyse de Données", "Taux de complétion": 62 },
-    { name: "Communication", "Taux de complétion": 91 },
-    { name: "Leadership d'équipe", "Taux de complétion": 75 },
-    { name: "Marketing Digital", "Taux de complétion": 58 },
-];
+interface FormationStat {
+    name: string;
+    "Taux de complétion": number;
+}
 
-const abandonedModulesData = [
-    {
-        module: "Analyse de Données - Module 3",
-        formation: "Analyse de Données Avancée",
-        tauxAbandon: "45%",
-    },
-    {
-        module: "Marketing Digital - Le SEO",
-        formation: "Marketing Digital Fondamentaux",
-        tauxAbandon: "38%",
-    },
-    {
-        module: "Leadership - Gestion de conflits",
-        formation: "Leadership d'équipe et Collaboration",
-        tauxAbandon: "32%",
-    },
-    {
-        module: "Planification Financière - Scénarios",
-        formation: "Planification Financière pour Startups",
-        tauxAbandon: "29%",
-    },
-];
+interface ModuleAbandonment {
+    module: string;
+    formation: string;
+    tauxAbandon: string;
+}
+
+interface AnalyticsData {
+    kpis: KPIs;
+    formation_completion_stats: FormationStat[];
+    module_abandonment_stats: ModuleAbandonment[];
+}
 
 export function AnalyticsPage() {
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { token } = useAuth();
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/admin/analytics`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error("Failed to fetch analytics");
+                const data = await response.json();
+                setAnalyticsData(data);
+            } catch (error) {
+                console.error("Error fetching analytics:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchAnalytics();
+        }
+    }, [token, apiUrl]);
+
+    if (isLoading) {
+        return (
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
+                        <div className="text-center py-8">
+                            <p className="text-lg">Chargement des analytics...</p>
+                        </div>
+                    </main>
+                </SidebarInset>
+            </SidebarProvider>
+        );
+    }
+
+    if (!analyticsData) {
+        return (
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
+                        <div className="text-center py-8">
+                            <p className="text-lg text-red-500">Erreur lors du chargement des analytics</p>
+                        </div>
+                    </main>
+                </SidebarInset>
+            </SidebarProvider>
+        );
+    }
+
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -81,9 +131,9 @@ export function AnalyticsPage() {
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">1,254</div>
+                                <div className="text-2xl font-bold">{analyticsData.kpis.total_users}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +12% depuis le mois dernier
+                                    Nombre total d'utilisateurs
                                 </p>
                             </CardContent>
                         </Card>
@@ -95,9 +145,9 @@ export function AnalyticsPage() {
                                 <BookCopy className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">342</div>
+                                <div className="text-2xl font-bold">{analyticsData.kpis.total_assigned}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    +5 nouvelles ce mois-ci
+                                    Assignations totales
                                 </p>
                             </CardContent>
                         </Card>
@@ -109,7 +159,7 @@ export function AnalyticsPage() {
                                 <CircleCheck className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">78.5%</div>
+                                <div className="text-2xl font-bold">{analyticsData.kpis.completion_rate}%</div>
                                 <p className="text-xs text-muted-foreground">
                                     Moyenne globale
                                 </p>
@@ -123,7 +173,7 @@ export function AnalyticsPage() {
                                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">92%</div>
+                                <div className="text-2xl font-bold">{analyticsData.kpis.quiz_success_rate}%</div>
                                 <p className="text-xs text-muted-foreground">
                                     Taux de réussite moyen
                                 </p>
@@ -142,38 +192,44 @@ export function AnalyticsPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="h-[350px] w-full p-2">
-                                <ResponsiveContainer>
-                                    <BarChart data={barChartData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis
-                                            dataKey="name"
-                                            tickLine={false}
-                                            axisLine={false}
-                                            tickMargin={8}
-                                            fontSize={12}
-                                        />
-                                        <YAxis unit="%" />
-                                        <Tooltip
-                                            cursor={{ fill: "hsl(var(--muted))" }}
-                                            content={({ active, payload, label }) =>
-                                                active &&
-                                                payload && (
-                                                    <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                                        <p className="font-bold">{label}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {`${payload[0].value}% de complétion`}
-                                                        </p>
-                                                    </div>
-                                                )
-                                            }
-                                        />
-                                        <Bar
-                                            dataKey="Taux de complétion"
-                                            fill="hsl(var(--primary))"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {analyticsData.formation_completion_stats.length > 0 ? (
+                                    <ResponsiveContainer>
+                                        <BarChart data={analyticsData.formation_completion_stats}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                            <XAxis
+                                                dataKey="name"
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickMargin={8}
+                                                fontSize={12}
+                                            />
+                                            <YAxis unit="%" />
+                                            <Tooltip
+                                                cursor={{ fill: "hsl(var(--muted))" }}
+                                                content={({ active, payload, label }) =>
+                                                    active &&
+                                                    payload && (
+                                                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                            <p className="font-bold">{label}</p>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {`${payload[0].value}% de complétion`}
+                                                            </p>
+                                                        </div>
+                                                    )
+                                                }
+                                            />
+                                            <Bar
+                                                dataKey="Taux de complétion"
+                                                fill="hsl(var(--primary))"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                        <p className="text-muted-foreground">Aucune donnée disponible</p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -194,19 +250,27 @@ export function AnalyticsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {abandonedModulesData.map((item) => (
-                                            <TableRow key={item.module}>
-                                                <TableCell>
-                                                    <p className="font-medium">{item.module}</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {item.formation}
-                                                    </p>
-                                                </TableCell>
-                                                <TableCell className="text-right font-semibold">
-                                                    {item.tauxAbandon}
+                                        {analyticsData.module_abandonment_stats.length > 0 ? (
+                                            analyticsData.module_abandonment_stats.map((item) => (
+                                                <TableRow key={item.module}>
+                                                    <TableCell>
+                                                        <p className="font-medium">{item.module}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {item.formation}
+                                                        </p>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-semibold">
+                                                        {item.tauxAbandon}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-center text-muted-foreground">
+                                                    Aucune donnée d'abandon disponible
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
