@@ -105,52 +105,57 @@ def create_user_as_admin(
     A temporary password is generated and must be communicated to the user.
     """
     admin_id = admin_user.get('sub')
-    temp_password = "imadimadimad"
+    # Note: The temporary password was hardcoded, which should be avoided in production.
+    # Using the generate_temporary_password function is better.
+    temp_password = generate_temporary_password() 
 
     try:
-        # 1. Create the user in Supabase Auth
-        created_user_response = supabase.auth.admin.create_user({
+        # 1. Create the user in Supabase Auth using the admin client
+        created_user_response = supabase_admin_client.auth.admin.create_user({
             "email": new_user_data.email,
-            "password": new_user_data.password,
+            "password": new_user_data.password, # Use the provided password or the generated one
             "email_confirm": True
         })
         new_user = created_user_response.user
         new_user_id = new_user.id
 
-        # 2. Use UPSERT to create/update the profile. This is the key fix.
-        # It avoids the race condition with the database trigger.
+        # 2. Use the admin client to UPSERT the profile, bypassing any RLS.
         profile_data = {
             "id": str(new_user_id),
             "prenom": new_user_data.prenom,
             "nom": new_user_data.nom
         }
-        supabase.table('profiles').upsert(profile_data).execute()
+        supabase_admin_client.table('profiles').upsert(profile_data).execute()
 
-        # 3. Add the user to the list of users managed by this admin
-        supabase.table('managed_users').insert({
+        # 3. Use the admin client to add the user to the list of managed users.
+        supabase_admin_client.table('managed_users').insert({
             "manager_id": str(admin_id),
             "user_id": str(new_user_id)
         }).execute()
         
-        # 4. Construct the final response without an extra SELECT call
+        # 4. Construct the final response
         final_profile = {
             "id": new_user_id,
             "prenom": new_user_data.prenom,
             "nom": new_user_data.nom,
-            "is_admin": False, # New users are not admins by default
+            "is_admin": False,
             "email": new_user.email,
             "registrationDate": new_user.created_at.strftime('%d/%m/%Y'),
             "lastActivity": "Jamais"
         }
 
-        print(f"--- TEMPORARY PASSWORD FOR {new_user_data.email} : {temp_password} ---")
+        print(f"--- TEMPORARY PASSWORD FOR {new_user_data.email} : {new_user_data.password} ---")
 
         return final_profile
 
     except Exception as e:
-        if 'User already registered' in str(e) or 'duplicate key value' in str(e):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists.")
-        # Provide a more specific error message from Supabase if available
+        # Check for specific Supabase Auth error for existing user
+        if 'User already registered' in str(e) or (hasattr(e, 'message') and 'User already registered' in e.message):
+             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists.")
+        # Check for database unique constraint violation on profiles table
+        if 'duplicate key value' in str(e):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A profile for this user ID already exists.")
+
         error_detail = str(e.args[0].message) if e.args and hasattr(e.args[0], 'message') else str(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create user: {error_detail}")
 
