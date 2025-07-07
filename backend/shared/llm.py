@@ -53,7 +53,9 @@ def get_llm(model_identifier, streaming=True):
 # export MODEL_NAME="meta-llama/llama-4-scout-17b-16e-instruct"
 
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "groq")
-MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/llama-4-scout-17b-16e-instruct")
+MODEL_NAME = os.getenv("MODEL_NAME", "llama3-70b-8192")
+# MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "mistral")
+# MODEL_NAME = os.getenv("MODEL_NAME", "mistral-small-latest")
 
 # Construit l'identifiant complet du modèle
 llm_model_identifier = f"{MODEL_PROVIDER}/{MODEL_NAME}"
