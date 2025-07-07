@@ -69,28 +69,3 @@ export async function requestPasswordReset(email: string): Promise<{ message: st
   return data;
 }
 
-/**
- * Resets the user's password.
- * @param password - The new password.
- * @param token - The authentication token from the password recovery session.
- * @returns A promise that resolves to the success message.
- */
-export async function resetPassword(password: string, token: string): Promise<{ message: string }> {
-  const response = await fetch(`${apiUrl}/reset-password`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Bearer ${token}`, // Use the recovery token
-    },
-    body: JSON.stringify({ password }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.detail || "Failed to reset password.");
-  }
-
-  return data;
-}

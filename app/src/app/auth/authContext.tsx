@@ -1,7 +1,6 @@
 // app/auth/authContext.tsx
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { resetPassword } from "@/api/auth"; // Assurez-vous que l'import est correct
 import { supabase } from "@/lib/supabase";
 
 // L'interface doit correspondre à la réponse de votre route /auth/me
@@ -103,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut();
   }, [signOut]);
 
-  const value = { user, token, signIn, signOut, loading };
+  const value = { user, token, signIn, signOut, loading, updatePassword };
 
   return (
     <AuthContext.Provider value={value}>

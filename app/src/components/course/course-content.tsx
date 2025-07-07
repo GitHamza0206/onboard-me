@@ -31,7 +31,7 @@ import css from 'highlight.js/lib/languages/css';
 import js from 'highlight.js/lib/languages/javascript';
 import ts from 'highlight.js/lib/languages/typescript';
 import html from 'highlight.js/lib/languages/xml';
-import { CodeBlockComponent } from "../../../../admin/src/components/editor/CodeBlockComponent";
+import { CodeBlockComponent } from "../editor/CodeBlockComponent";
 
 lowlight.registerLanguage('html', html);
 lowlight.registerLanguage('css', css);

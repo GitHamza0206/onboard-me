@@ -15,7 +15,7 @@ export default defineConfig({
     host: '0.0.0.0',
 
     // Autorise l'accès depuis votre nom de domaine
-    allowedHosts: ['app.onboardme.fr'],
+    allowedHosts: ['onboardme.fr'],
 
     // Recommandé pour que le Hot-Reload fonctionne derrière un proxy
     watch: {

@@ -193,6 +193,9 @@ async def request_password_reset(
     try:
         supabase.auth.reset_password_for_email(
             email=req.email,
+            options={
+                "redirect_to": "https://onboardme.fr/reset-password"
+            }
         )
         # Pour le développement, vous pouvez logger un message. 
         # En production, l'e-mail est envoyé par Supabase.
@@ -202,26 +205,4 @@ async def request_password_reset(
         # Ne révélez pas si l'email existe ou non pour des raisons de sécurité.
         print(f"Error during password reset request: {e}")
         return {"message": "Si un compte avec cet e-mail existe, un lien de réinitialisation a été envoyé."}
-
-
-@router.post("/reset-password", dependencies=[Depends(get_current_user)])
-def reset_password(
-    req: schema.PasswordResetPayload,
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Met à jour le mot de passe de l'utilisateur.
-    Cette route est protégée et ne fonctionne que si l'utilisateur a un token de session valide
-    (obtenu en cliquant sur le lien de réinitialisation).
-    """
-    try:
-        # Le `get_current_user` garantit que nous avons un utilisateur authentifié
-        # via le token obtenu après avoir cliqué sur le lien de réinitialisation.
-        supabase.auth.update_user({
-            "password": req.password
-        })
-        return {"message": "Votre mot de passe a été mis à jour avec succès."}
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to reset password: {e}")
-
 
