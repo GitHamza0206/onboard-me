@@ -33,6 +33,12 @@ ALLOWED_ORIGINS = [
     "http://localhost:8000",  # FastAPI server
     "http://127.0.0.1:8000",  # FastAPI server backend
     "http://back:8000",  # FastAPI server
+    "http://onboardme.fr",  # FastAPI server
+    "https://onboardme.fr",  # FastAPI server
+    "http://admin.onboardme.fr",  # FastAPI server
+    "https://admin.onboardme.fr",  # FastAPI server
+    "http://api.onboardme.fr",  # FastAPI server
+    "https://api.onboardme.fr",  # FastAPI server
 ]
 
 

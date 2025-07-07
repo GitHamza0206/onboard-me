@@ -1,0 +1,42 @@
+{
+    # Adresse e‑mail utilisée pour le compte ACME
+    email admin@onboardme.fr
+}
+
+# ------------------------------------------------------
+# Snippet commun (compression + logs)
+# ------------------------------------------------------
+(onboard-common) {
+    encode gzip zstd
+    log {
+        output stdout
+        format console
+    }
+}
+
+# ------------------------------------------------------
+# Domaine racine
+# ------------------------------------------------------
+onboardme.fr {
+    import onboard-common
+    # Proxy requests to the "app" service defined in docker-compose.yml
+    reverse_proxy app:5173
+}
+
+# ------------------------------------------------------
+# Sous‑domaine admin
+# ------------------------------------------------------
+admin.onboardme.fr {
+    import onboard-common
+    # Proxy requests to the "admin" service defined in docker-compose.yml
+    reverse_proxy admin:5173
+}
+
+# ------------------------------------------------------
+# Sous‑domaine API
+# ------------------------------------------------------
+api.onboardme.fr {
+    import onboard-common
+    # Proxy requests to the "backend" service defined in docker-compose.yml
+    reverse_proxy backend:8000
+}

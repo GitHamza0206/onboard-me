@@ -10,4 +10,16 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),          //  <--  alias unique
     },
   },
+  server: {
+    // Écoute sur toutes les interfaces réseau (nécessaire pour Docker)
+    host: '0.0.0.0',
+
+    // Autorise l'accès depuis votre nom de domaine
+    allowedHosts: ['admin.onboardme.fr'],
+
+    // Recommandé pour que le Hot-Reload fonctionne derrière un proxy
+    watch: {
+      usePolling: true
+    }
+  }
 });

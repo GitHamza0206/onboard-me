@@ -75,24 +75,23 @@ services:
     networks:
       - app-network
 
-  # caddy:
-  #   image: caddy:latest
-  #   container_name: caddy
-  #   restart: always
-  #   volumes:
-  #     - ./caddy/Caddyfile.prod:/etc/caddy/Caddyfile
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #     - /var/log/caddy:/var/log/caddy
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   depends_on:
-  #     - backend
-  #     - admin
-  #     - app
-  #   networks:
-  #     - app-network
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - admin
+      - app
+    networks:
+      - app-network
 
 networks:
   app-network:
