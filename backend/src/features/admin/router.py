@@ -1,6 +1,7 @@
 # features/admin/router.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from src.supabase_client import supabase
+from supabase import create_client, Client 
 from src.features.auth.dependencies import get_current_admin_user
 from src.features.formations.schema import Formation as FormationSchema
 from . import schema
@@ -8,12 +9,19 @@ from uuid import UUID
 from typing import List
 import secrets 
 import string 
+import traceback 
+import os
+
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
 
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
     dependencies=[Depends(get_current_admin_user)]
 )
+
+supabase_admin_client: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 def generate_temporary_password(length=12):
     """Generates a secure temporary password."""
@@ -154,34 +162,32 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
     admin_id = admin_user.get('sub')
 
     try:
-        # --- CORRECTION ICI ---
+        # This can use the standard client, as it might have its own RLS (e.g., admin sees their own managed users)
         managed_users_response = supabase.table('managed_users').select('user_id').eq('manager_id', admin_id).execute()
-        print(f"--- MANAGED USERS RESPONSE: {managed_users_response.data} ---")
         
         if not managed_users_response.data:
             return []
 
         managed_user_ids = [item['user_id'] for item in managed_users_response.data]
         
-        # --- CORRECTION ICI ---
-        profiles_response = supabase.table('profiles').select('*').in_('id', managed_user_ids).execute()
+        # --- FIX: Use the admin client to bypass RLS on the 'profiles' table ---
+        profiles_response = supabase_admin_client.table('profiles').select('*').in_('id', managed_user_ids).execute()
         profiles = profiles_response.data
-        print(f"--- PROFILES FOUND: {len(profiles)} profiles ---")
+        print(f"--- PROFILES FOUND: {len(profiles)} profiles ---") # This should now show the correct count
 
         enriched_profiles = []
         for profile in profiles:
             try:
                 print(f"--- ENRICHING PROFILE: {profile['id']} ---")
-                # --- CORRECTION ICI ---
-                auth_user_response = supabase.auth.admin.get_user_by_id(profile['id'])
+                # --- FIX: Use the admin client to get user data from auth schema ---
+                auth_user_response = supabase_admin_client.auth.admin.get_user_by_id(profile['id'])
                 auth_user = auth_user_response.user
                 
                 registration_date = auth_user.created_at.strftime('%d/%m/%Y')
-                last_activity = "Never"
+                last_activity = "Jamais" # Changed from "Never" to be consistent with your other code
                 if auth_user.last_sign_in_at:
                     last_activity = auth_user.last_sign_in_at.strftime('%d/%m/%Y %H:%M')
 
-                # Calculer la vraie progression basée sur les quiz
                 progress_percentage, onboarding_status = calculate_user_quiz_progress(profile['id'])
                 print(f"--- PROGRESS FOR {profile['id']}: {progress_percentage}% ({onboarding_status}) ---")
 
@@ -197,7 +203,6 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
                 print(f"--- SUCCESSFULLY ENRICHED USER {profile['id']} ---")
             except Exception as e:
                 print(f"Could not enrich profile for user {profile['id']}: {e}")
-                import traceback
                 print(f"--- TRACEBACK: {traceback.format_exc()} ---")
                 continue
         
@@ -205,9 +210,9 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
         return enriched_profiles
 
     except Exception as e:
-        # Il est bon de logger l'erreur pour le débogage
         print(f"An error occurred while retrieving users: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to retrieve users: {e}")
+
 
 @router.get("/users/{user_id}/formations", response_model=List[FormationSchema])
 def get_user_assigned_formations(user_id: UUID, admin_user: dict = Depends(get_current_admin_user)):
