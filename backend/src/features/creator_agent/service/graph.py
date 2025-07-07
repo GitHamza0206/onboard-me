@@ -23,15 +23,16 @@ workflow.add_node("tools", tool_node)
 # ===========================================
 workflow.add_edge(START, "ingest_knowledge")
 workflow.add_edge("ingest_knowledge", "generate")
+workflow.add_edge("generate", END)
 
-def should_create_structure(state: State) -> str:
-    """Return 'create_structure' if the agent should create a structure, otherwise return END."""
-    return "create_structure" if state.get("confidence_score") >= 4 else END
+# def should_create_structure(state: State) -> str:
+#     """Return 'create_structure' if the agent should create a structure, otherwise return END."""
+#     return "create_structure" if state.get("confidence_score") >= 4 else END
 
-workflow.add_conditional_edges("generate", 
-                               should_create_structure,
-                               )
-workflow.add_edge("create_structure", END)
+# workflow.add_conditional_edges("generate", 
+#                                should_create_structure,
+#                                )
+# workflow.add_edge("create_structure", END)
 
 def should_continue(state: State) -> str:
     """Return 'tools' if the agent should call tools, otherwise return END."""
