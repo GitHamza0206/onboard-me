@@ -26,7 +26,7 @@ workflow.add_edge("ingest_knowledge", "generate")
 
 def should_create_structure(state: State) -> str:
     """Return 'create_structure' if the agent should create a structure, otherwise return END."""
-    return "create_structure" if state.get("confidence_score") >= 8 else END
+    return "create_structure" if state.get("confidence_score") >= 4 else END
 
 workflow.add_conditional_edges("generate", 
                                should_create_structure,
