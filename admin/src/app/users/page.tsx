@@ -43,6 +43,7 @@ const getInitials = (name: string) => {
 export function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
     const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
 
     // State for the details drawer
@@ -53,20 +54,41 @@ export function UsersPage() {
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
     const fetchUsers = useCallback(async () => {
+        if (!token) {
+            console.log("No token available, skipping user fetch");
+            setIsLoading(false);
+            setHasError(false);
+            return;
+        }
+        
         setIsLoading(true);
+        setHasError(false);
         try {
             const response = await fetch(`${apiUrl}/admin/users`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!response.ok) throw new Error("Failed to fetch users");
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.error("Token expired or invalid, redirecting to auth");
+                    // Le contexte d'auth devrait gérer ça automatiquement
+                    return;
+                }
+                throw new Error("Failed to fetch users");
+            }
             const data = await response.json();
+            console.log("--- FRONTEND: Received users data:", data);
             const formattedUsers = data.map((u: any) => ({
                 ...u,
                 fullName: `${u.prenom || ''} ${u.nom || ''}`.trim(),
             }));
+            console.log("--- FRONTEND: Formatted users:", formattedUsers);
             setUsers(formattedUsers);
+            setHasError(false);
         } catch (error) {
-            console.error(error);
+            console.error("Error fetching users:", error);
+            setHasError(true);
+            // En cas d'erreur de connexion, on garde les utilisateurs vides
+            setUsers([]);
         } finally {
             setIsLoading(false);
         }
@@ -108,6 +130,17 @@ export function UsersPage() {
                             <TableBody>
                                 {isLoading ? (
                                     <TableRow><TableCell colSpan={5} className="text-center">Chargement...</TableCell></TableRow>
+                                ) : users.length === 0 ? (
+                                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        {!token ? "Authentification requise" : hasError ? (
+                                            <div className="space-y-2">
+                                                <p>Erreur de connexion au serveur</p>
+                                                <Button variant="outline" size="sm" onClick={fetchUsers}>
+                                                    Réessayer
+                                                </Button>
+                                            </div>
+                                        ) : "Aucun utilisateur trouvé"}
+                                    </TableCell></TableRow>
                                 ) : (
                                     users.map((user) => (
                                         <TableRow key={user.id} onClick={() => handleUserClick(user)} className="cursor-pointer">
