@@ -7,6 +7,57 @@ from src.features.creator_agent.service.nodes.save_to_supabase import save
 from src.features.creator_agent.service.nodes.generate_quiz import generate_quiz
 from src.features.creator_agent.service.nodes.save_quiz_to_supabase import save_quiz_to_supabase
 
+def finalize_formation(state: State) -> State:
+    """Finalise la formation en mettant à jour has_content = true"""
+    try:
+        print("🎯 Finalisation de la formation...")
+        
+        # Obtenir formation_id depuis le premier module
+        if state["submodules"]:
+            first_module = state["submodules"][0]
+            module_id = first_module["module_id"]
+            numeric_module_id = int(module_id.split('_')[1])
+            
+            from src.supabase_client import supabase
+            from langchain_core.messages import AIMessage
+            
+            # Trouver la formation_id
+            fm_response = supabase.table("formation_modules").select("formation_id").eq("module_id", numeric_module_id).single().execute()
+            
+            if fm_response.data and fm_response.data.get("formation_id"):
+                formation_id = fm_response.data["formation_id"]
+                print(f"🏁 Mise à jour de la formation ID {formation_id} à has_content = true")
+                
+                # Mettre à jour has_content
+                supabase.table("formations").update({"has_content": True}).eq("id", formation_id).execute()
+                
+                total_lessons = len(state["submodules"])
+                final_message = AIMessage(
+                    content=f"🎉 Formation complètement terminée! {total_lessons} leçons générées et sauvegardées. Formation ID {formation_id} finalisée."
+                )
+                
+                print(f"--- [BACKGROUND TASK] Génération du contenu terminée avec succès. Formation {formation_id} finalisée. ---")
+                
+                return {
+                    "messages": [final_message],
+                    "formation_completed": {
+                        "formation_id": formation_id,
+                        "total_lessons": total_lessons,
+                        "status": "completed"
+                    }
+                }
+            else:
+                print("❌ Impossible de trouver la formation_id pour finaliser")
+                return {"messages": [AIMessage(content="❌ Erreur lors de la finalisation")]}
+        else:
+            print("❌ Aucun module trouvé pour finaliser")
+            return {"messages": [AIMessage(content="❌ Aucun contenu à finaliser")]}
+            
+    except Exception as e:
+        print(f"❌ Erreur lors de la finalisation: {str(e)}")
+        from langchain_core.messages import AIMessage
+        return {"messages": [AIMessage(content=f"❌ Erreur lors de la finalisation: {str(e)}")]}
+
 workflow = StateGraph(State)
 
 # ↓↓↓  Nœuds
@@ -15,12 +66,13 @@ workflow.add_node("generate_lesson", generate_lesson)
 workflow.add_node("save", save)
 workflow.add_node("generate_quiz", generate_quiz)
 workflow.add_node("save_quiz", save_quiz_to_supabase)
+workflow.add_node("finalize", finalize_formation)
 
 # ↓↓↓  Logique de boucle
 def has_more(state: State) -> str:
-    if state["current_index"]< len(state["submodules"]):
+    if state["current_index"] < len(state["submodules"]):
         return "loop"
-    return END
+    return "finalize"
 
 def increment_index(state: State) -> State:
     return {"current_index": state["current_index"] + 1}
@@ -65,9 +117,11 @@ workflow.add_conditional_edges(
     has_more,
     {
         "loop": "generate_lesson",              # continue
-        END: END                                # terminé
+        "finalize": "finalize"                  # finaliser
     }
 )
 workflow.add_node("loop", increment_index)      # nœud d’incrémentation
+
+workflow.add_edge("finalize", END)              # fin après finalisation
 
 graph = workflow.compile()

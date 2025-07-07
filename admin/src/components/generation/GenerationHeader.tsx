@@ -1,5 +1,5 @@
 // src/components/generation/GenerationHeader.tsx
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Zap, ChevronLeft, Loader2 } from "lucide-react";
@@ -11,16 +11,31 @@ export function GenerationHeader({ title }: { title: string }) {
   const { courseId } = useParams();
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const pollGenerationStatus = (intervalId: NodeJS.Timeout) => {
-    fetch(`http://localhost:8000/formations/${courseId}`, {
+  // Cleanup sur démontage du composant
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const pollGenerationStatus = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    
+    fetch(`${apiUrl}/formations/${courseId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
       .then(data => {
         if (data.has_content === true) {
           console.log("Génération terminée, rechargement...");
-          clearInterval(intervalId);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           setIsGenerating(false);
           window.location.reload();
         } else {
@@ -29,7 +44,10 @@ export function GenerationHeader({ title }: { title: string }) {
       })
       .catch(err => {
         console.error("Erreur de polling:", err);
-        clearInterval(intervalId);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         setIsGenerating(false);
         alert("Une erreur est survenue lors de la vérification du statut.");
       });
@@ -38,16 +56,24 @@ export function GenerationHeader({ title }: { title: string }) {
   async function handleGenerateClick() {
     if (!token || !courseId || isGenerating) return;
 
+    // Nettoyer l'ancien interval s'il existe
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
     setIsGenerating(true);
 
     try {
-      const structureRes = await fetch(`http://localhost:8000/formations/${courseId}/structure`, {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      
+      const structureRes = await fetch(`${apiUrl}/formations/${courseId}/structure`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!structureRes.ok) throw new Error("Impossible de récupérer la structure");
       const structure = await structureRes.json();
 
-      const genRes = await fetch("http://localhost:8000/agent/content", {
+      const genRes = await fetch(`${apiUrl}/agent/content`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -61,7 +87,8 @@ export function GenerationHeader({ title }: { title: string }) {
           throw new Error(errorData.detail || "La tâche de génération n'a pas pu être lancée.");
       }
       
-      const intervalId = setInterval(() => pollGenerationStatus(intervalId), 5000);
+      // Stocker la référence de l'interval
+      intervalRef.current = setInterval(pollGenerationStatus, 5000);
       
     } catch (err: any) {
       alert("❌ " + err.message);

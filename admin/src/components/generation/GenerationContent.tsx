@@ -73,7 +73,6 @@ export function GenerationContent({
   onTitle: (t: string) => void;
 }) {
   const { token } = useAuth();
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const [course, setCourse] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("Course Title");
@@ -85,6 +84,9 @@ export function GenerationContent({
 
   useEffect(() => {
     if (!token) return;
+    
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    
     (async () => {
       try {
         const res = await fetch(`${apiUrl}/formations/${courseId}`, {
@@ -112,7 +114,7 @@ export function GenerationContent({
         setLoading(false);
       }
     })();
-  }, [courseId, token]);
+  }, [courseId, token, onTitle]); // Ajouter onTitle dans les dépendances
 
   if (loading) return <div className="p-8">Loading…</div>;
 

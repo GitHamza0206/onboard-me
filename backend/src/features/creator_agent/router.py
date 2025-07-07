@@ -7,7 +7,12 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from src.features.auth.dependencies import get_current_user, get_current_admin_user
 from fastapi import HTTPException, status, Body
-from src.features.creator_agent.service.graph_generate_content import graph as content_graph
+try:
+    from src.features.creator_agent.service.graph_generate_content import graph as content_graph
+    print("✅ Content graph importé avec succès")
+except Exception as e:
+    print(f"❌ Erreur lors de l'import du content graph: {e}")
+    content_graph = None
 import uuid
 
 from src.features.creator_agent.service.graph import graph
@@ -532,19 +537,27 @@ async def run_generation_in_background(structure: Dict[str, Any]):
     """
     Cette fonction exécute la longue tâche de génération de contenu en arrière-plan.
     """
-    # try:
-    print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
-    state = {"course_structure": structure}
-    # La configuration pour la limite de récursion est toujours nécessaire
-    config = {"recursion_limit": 100} 
-    
-    await content_graph.ainvoke(state, config=config)
-    
-    print("--- [BACKGROUND TASK] Génération du contenu terminée avec succès. ---")
+    try:
+        if content_graph is None:
+            raise Exception("Content graph non disponible - erreur d'import")
+            
+        print("--- [BACKGROUND TASK] Démarrage de la génération du contenu... ---")
+        print(f"--- Structure reçue: {structure.get('title', 'Pas de titre')} avec {len(structure.get('modules', []))} modules ---")
+        
+        state = {"course_structure": structure}
+        # La configuration pour la limite de récursion est toujours nécessaire
+        config = {"recursion_limit": 100} 
+        
+        result = await content_graph.ainvoke(state, config=config)
+        print(f"--- [BACKGROUND TASK] Résultat: {result} ---")
+        
+        print("--- [BACKGROUND TASK] Génération du contenu terminée avec succès. ---")
 
-    # except Exception as e:
-    #     # Dans une vraie application, utilisez un logger plus robuste
-    #     print(f"--- [ERREUR BACKGROUND TASK] La génération a échoué : {str(e)} ---")
+    except Exception as e:
+        # Dans une vraie application, utilisez un logger plus robuste
+        print(f"--- [ERREUR BACKGROUND TASK] La génération a échoué : {str(e)} ---")
+        import traceback
+        print(f"--- [STACK TRACE] {traceback.format_exc()} ---")
 
 
 @router.post("/content", status_code=status.HTTP_202_ACCEPTED) 

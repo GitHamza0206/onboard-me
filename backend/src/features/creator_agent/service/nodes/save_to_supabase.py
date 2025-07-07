@@ -37,40 +37,8 @@ def save(state: State) -> State:
         
         messages = [start_save_msg, save_success_msg]
         
-        # Logique critique pour la fin du processus
-        if current_index + 1 == len(submodules):
-            print(f"--- Toutes les {len(submodules)} leçons ont été générées. Mise à jour du statut de la formation. ---")
-            
-            module_id = lesson_info.get("module_id")
-            if module_id:
-                numeric_module_id = int(module_id.split('_')[1])
-                
-                fm_response = supabase.table("formation_modules").select("formation_id").eq("module_id", numeric_module_id).single().execute()
-                
-                if fm_response.data and fm_response.data.get("formation_id"):
-                    formation_id = fm_response.data["formation_id"]
-                    print(f"--- Mise à jour de la formation ID {formation_id} à has_content = true ---")
-                    
-                    supabase.table("formations").update({"has_content": True}).eq("id", formation_id).execute()
-                    
-                    final_message = AIMessage(
-                        content=f"🎉 Formation terminée! Toutes les {len(submodules)} leçons ont été générées et sauvegardées. Formation ID {formation_id} mise à jour avec has_content = true."
-                    )
-                    
-                    messages.append(final_message)
-                    
-                    # CORRECTION : Mettre fin explicitement au graphe ici
-                    return {
-                        "messages": messages,
-                        "formation_completed": {
-                            "formation_id": formation_id,
-                            "total_lessons": len(submodules),
-                            "status": "completed"
-                        },
-                        END: True  # Signal de fin pour langgraph
-                    }
-                else:
-                    print(f"--- Impossible de trouver formation_id pour module_id {numeric_module_id}. ---")
+        # Note: La finalisation de la formation se fait maintenant dans le node 'finalize'
+        # pour s'assurer qu'elle se produit après tous les quiz
 
     except Exception as e:
         error_message = f"💾 Erreur lors de la sauvegarde pour la leçon {lesson_id}: {str(e)}"

@@ -17,7 +17,6 @@ interface FormationData {
 export default function GenerationEntryPage() {
   const { courseId } = useParams();
   const { token } = useAuth();
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +26,8 @@ export default function GenerationEntryPage() {
 
   useEffect(() => {
     if (!courseId || !token) return;
+
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
     (async () => {
       try {
@@ -44,7 +45,7 @@ export default function GenerationEntryPage() {
         setLoading(false);
       }
     })();
-  }, [courseId, token, apiUrl]);
+  }, [courseId, token]); // Retirer apiUrl des dépendances
 
   if (loading) return <p className="p-8">Chargement…</p>;
   if (error) return <p className="p-8 text-destructive">{error}</p>;
