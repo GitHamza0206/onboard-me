@@ -4,8 +4,9 @@ WORKDIR /app
 
 # Dépendances système minimales
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl unzip gnupg build-essential \
+        curl unzip gnupg build-essential libgl1-mesa-glx libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
+
 
 # uv (+ pip récent pour être tranquille)
 RUN pip install --upgrade pip && pip install uv
