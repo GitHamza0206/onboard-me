@@ -1,0 +1,103 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      COMPOSIO_API_KEY: ${COMPOSIO_API_KEY}
+      # Force polling for the reloader to fix file-watching issues
+      WATCHFILES_FORCE_POLLING: "true"
+    networks: [app-network]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Mount the whole app directory
+      - ./admin:/app
+      # Use an anonymous volume to keep node_modules inside the container
+      - /app/node_modules
+    environment:
+      # Use polling for file watching
+      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_API_URL=${VITE_API_URL}
+    ports:
+      - "8888:5173"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Mount the whole app directory
+      - ./app:/app
+      # Use an anonymous volume to keep node_modules inside the container
+      - /app/node_modules
+    environment:
+      # Use polling for file watching
+      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_API_URL=${VITE_API_URL}
+    ports:
+      - "8889:5173"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # caddy:
+  #   image: caddy:latest
+  #   container_name: caddy
+  #   restart: always
+  #   volumes:
+  #     - ./caddy/Caddyfile.prod:/etc/caddy/Caddyfile
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #     - /var/log/caddy:/var/log/caddy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - backend
+  #     - admin
+  #     - app
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
