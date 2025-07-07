@@ -16,6 +16,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onU
   const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
+  const [password, setPassword] = useState(""); // <-- Add state for password
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
@@ -32,7 +33,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onU
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ email, prenom, nom }),
+        // Include password in the request body
+        body: JSON.stringify({ email, prenom, nom, password }),
       });
 
       if (!response.ok) {
@@ -40,7 +42,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onU
         throw new Error(errData.detail || "Failed to add user.");
       }
 
-      toast({ title: "✅ Utilisateur invité", description: `Un e-mail d'invitation a été envoyé à ${email}.` });
+      toast({ title: "✅ Utilisateur ajouté", description: `Le compte pour ${email} a été créé.` });
       onUserAdded(); // Rafraîchit la liste des utilisateurs
       onClose(); // Ferme la modale
     } catch (err: any) {
@@ -50,23 +52,38 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onU
     }
   };
 
+  // Reset fields on close
+  const handleClose = () => {
+      setEmail("");
+      setPrenom("");
+      setNom("");
+      setPassword("");
+      setError(null);
+      onClose();
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Ajouter un nouvel utilisateur</DialogTitle>
           <DialogDescription>
-            L'utilisateur recevra une invitation par e-mail pour configurer son compte.
+             L'utilisateur sera créé directement avec le mot de passe fourni.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2"><Label htmlFor="prenom">Prénom</Label><Input id="prenom" value={prenom} onChange={(e) => setPrenom(e.target.value)} /></div>
           <div className="grid gap-2"><Label htmlFor="nom">Nom</Label><Input id="nom" value={nom} onChange={(e) => setNom(e.target.value)} /></div>
           <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+          {/* Add password input field */}
+          <div className="grid gap-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
         </div>
          {error && <p className="text-sm text-red-500">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={handleClose}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={isLoading}>{isLoading ? "Ajout..." : "Ajouter l'utilisateur"}</Button>
         </DialogFooter>
       </DialogContent>
