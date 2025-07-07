@@ -8,6 +8,7 @@ class AdminUserCreate(BaseModel):
     email: EmailStr
     prenom: Optional[str] = None
     nom: Optional[str] = None
+    password: Optional[str] = None
 
 class UserProfileResponse(BaseModel):
     """ Modèle pour la réponse contenant le profil complet d'un utilisateur. """

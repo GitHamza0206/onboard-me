@@ -37,8 +37,8 @@ export default function DocumentManagementPage() {
                     <div className="p-6 pb-2">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-2xl font-bold">Gestion des Documents</h1>
-                                <p className="text-muted-foreground">Gérez votre base de connaissances.</p>
+                                <h1 className="text-2xl font-bold">Document Management</h1>
+                                <p className="text-muted-foreground">Manage your knowledge base.</p>
                             </div>
                             <Button onClick={() => setIsIntegrationsModalOpen(true)}>
                                 Add integration

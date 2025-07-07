@@ -89,7 +89,7 @@ export function AnalyticsPage() {
                 <SidebarInset>
                     <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
                         <div className="text-center py-8">
-                            <p className="text-lg">Chargement des analytics...</p>
+                            <p className="text-lg">Loading analytics...</p>
                         </div>
                     </main>
                 </SidebarInset>
@@ -104,7 +104,7 @@ export function AnalyticsPage() {
                 <SidebarInset>
                     <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
                         <div className="text-center py-8">
-                            <p className="text-lg text-red-500">Erreur lors du chargement des analytics</p>
+                            <p className="text-lg text-red-500">Error loading analytics</p>
                         </div>
                     </main>
                 </SidebarInset>
@@ -118,7 +118,7 @@ export function AnalyticsPage() {
             <SidebarInset>
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
                     <h1 className="text-3xl font-bold tracking-tight">
-                        Tableau de Bord Analytique
+                    Analytics Dashboard
                     </h1>
 
                     {/* KPIs */}
@@ -126,56 +126,56 @@ export function AnalyticsPage() {
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium">
-                                    Utilisateurs totaux
+                                Total Users
                                 </CardTitle>
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{analyticsData.kpis.total_users}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Nombre total d'utilisateurs
+                                Total number of users
                                 </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium">
-                                    Formations assignées
+                                Assigned Trainings
                                 </CardTitle>
                                 <BookCopy className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{analyticsData.kpis.total_assigned}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Assignations totales
+                                Total assignments
                                 </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium">
-                                    Taux de complétion
+                                Completion Rate
                                 </CardTitle>
                                 <CircleCheck className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{analyticsData.kpis.completion_rate}%</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Moyenne globale
+                                Overall average
                                 </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium">
-                                    Quiz réussis
+                                Successful Quizzes
                                 </CardTitle>
                                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{analyticsData.kpis.quiz_success_rate}%</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Taux de réussite moyen
+                                Average success rate
                                 </p>
                             </CardContent>
                         </Card>
@@ -186,9 +186,9 @@ export function AnalyticsPage() {
                         {/* Graphique Progression par formation */}
                         <Card className="lg:col-span-2">
                             <CardHeader>
-                                <CardTitle>Progression par Formation</CardTitle>
+                                <CardTitle>Training Progress</CardTitle>
                                 <CardDescription>
-                                    Taux de complétion moyen pour les formations principales.
+                                Average completion rate for main trainings.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="h-[350px] w-full p-2">
@@ -212,7 +212,7 @@ export function AnalyticsPage() {
                                                         <div className="rounded-lg border bg-background p-2 shadow-sm">
                                                             <p className="font-bold">{label}</p>
                                                             <p className="text-sm text-muted-foreground">
-                                                                {`${payload[0].value}% de complétion`}
+                                                                {`${payload[0].value}% completion`}
                                                             </p>
                                                         </div>
                                                     )
@@ -227,7 +227,7 @@ export function AnalyticsPage() {
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="flex items-center justify-center h-full">
-                                        <p className="text-muted-foreground">Aucune donnée disponible</p>
+                                        <p className="text-muted-foreground">data available</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -236,9 +236,9 @@ export function AnalyticsPage() {
                         {/* Tableau Modules les plus abandonnés */}
                         <Card className="lg:col-span-1">
                             <CardHeader>
-                                <CardTitle>Modules les plus abandonnés</CardTitle>
+                                <CardTitle>Most Abandoned Modules</CardTitle>
                                 <CardDescription>
-                                    Les modules où les utilisateurs abandonnent le plus.
+                                Modules where users are most likely to drop out.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -246,7 +246,7 @@ export function AnalyticsPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Module</TableHead>
-                                            <TableHead className="text-right">Abandon</TableHead>
+                                            <TableHead className="text-right">Dropout Rate</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -267,7 +267,7 @@ export function AnalyticsPage() {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={2} className="text-center text-muted-foreground">
-                                                    Aucune donnée d'abandon disponible
+                                                No dropout data available
                                                 </TableCell>
                                             </TableRow>
                                         )}
