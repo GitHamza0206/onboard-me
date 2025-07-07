@@ -166,10 +166,12 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
         # --- CORRECTION ICI ---
         profiles_response = supabase.table('profiles').select('*').in_('id', managed_user_ids).execute()
         profiles = profiles_response.data
+        print(f"--- PROFILES FOUND: {len(profiles)} profiles ---")
 
         enriched_profiles = []
         for profile in profiles:
             try:
+                print(f"--- ENRICHING PROFILE: {profile['id']} ---")
                 # --- CORRECTION ICI ---
                 auth_user_response = supabase.auth.admin.get_user_by_id(profile['id'])
                 auth_user = auth_user_response.user
@@ -181,6 +183,7 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
 
                 # Calculer la vraie progression basée sur les quiz
                 progress_percentage, onboarding_status = calculate_user_quiz_progress(profile['id'])
+                print(f"--- PROGRESS FOR {profile['id']}: {progress_percentage}% ({onboarding_status}) ---")
 
                 enriched_profile = {
                     **profile,
@@ -191,10 +194,14 @@ def get_managed_users(admin_user: dict = Depends(get_current_admin_user)):
                     "progress": progress_percentage
                 }
                 enriched_profiles.append(enriched_profile)
+                print(f"--- SUCCESSFULLY ENRICHED USER {profile['id']} ---")
             except Exception as e:
                 print(f"Could not enrich profile for user {profile['id']}: {e}")
+                import traceback
+                print(f"--- TRACEBACK: {traceback.format_exc()} ---")
                 continue
         
+        print(f"--- FINAL ENRICHED PROFILES COUNT: {len(enriched_profiles)} ---")
         return enriched_profiles
 
     except Exception as e:

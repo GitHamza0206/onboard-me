@@ -503,6 +503,8 @@ class StructureRequest(BaseModel):
     thread_id: str | None = None
     prompt: str     
 
+from src.features.creator_agent.service.nodes.create_structure import create_structure
+
 @router.post("/structure", status_code=200)
 async def generate_structure(
     req: StructureRequest,
@@ -516,7 +518,7 @@ async def generate_structure(
 
     # 2. Exécute *synchroniquement* le graph
     try:
-        result = await graph.ainvoke(state, cfg)
+        result = create_structure(state)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

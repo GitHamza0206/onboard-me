@@ -37,12 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Authorization": `Bearer ${currentToken}` },
       });
       if (!response.ok) {
+        console.error("Failed to fetch user profile, status:", response.status);
         throw new Error("Token invalide ou expiré");
       }
       return await response.json();
     } catch (error) {
       console.error("Erreur fetchUserProfile:", error);
-      localStorage.removeItem("token");
+      // Seulement supprimer le token si ce n'est pas une erreur de connexion
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.warn("Connection error - keeping token for retry");
+      } else {
+        localStorage.removeItem("token");
+        setToken(null);
+      }
       return null;
     }
   }, [apiUrl]);
@@ -67,18 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
+      
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.detail || "La connexion a échoué");
       }
+      
+      const data = await response.json();
       localStorage.setItem("token", data.access_token);
       setToken(data.access_token);
       const profile = await fetchUserProfile(data.access_token);
       setUser(profile);
       navigate("/courses");
     } catch (error) {
-      console.error(error);
+      console.error("Sign in error:", error);
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.error("Connection refused - backend server may be down");
+      }
       // Gérer l'affichage de l'erreur à l'utilisateur
+      throw error; // Re-throw pour que le composant puisse l'afficher
     } finally {
       setLoading(false);
     }
