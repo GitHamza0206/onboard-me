@@ -56,7 +56,7 @@ export function CreatePage() {
 
   useEffect(() => {
     console.log("Confidence score updated:", confidenceScore);
-    if (confidenceScore >= 8 && !isChatStreaming) {
+    if (confidenceScore >= 4 && !isChatStreaming) {
       setShowGenerateButton(true);
     } else {
       setShowGenerateButton(false);
