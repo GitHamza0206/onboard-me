@@ -29,13 +29,13 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClos
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Téléverser des documents</DialogTitle>
-          <DialogDescription>Sélectionnez les fichiers à ajouter à votre base de connaissances.</DialogDescription>
+          <DialogTitle>Upload Documents</DialogTitle>
+          <DialogDescription>Select the files to add to your knowledge base.</DialogDescription>
         </DialogHeader>
         <Input type="file" multiple onChange={handleFileChange} />
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleUploadClick} disabled={!selectedFiles}>Téléverser</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleUploadClick} disabled={!selectedFiles}>Upload</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

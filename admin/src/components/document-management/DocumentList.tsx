@@ -31,11 +31,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
     const renderEmptyState = () => (
         <div className="text-center py-16 text-muted-foreground">
-            <h3 className="text-lg font-semibold">Aucun document trouvé</h3>
-            <p className="text-sm mt-1">Commencez par téléverser votre premier document.</p>
+            <h3 className="text-lg font-semibold">No document found</h3>
+            <p className="text-sm mt-1">Start by uploading your first document.</p>
             <Button size="sm" className="mt-4" onClick={onUploadClick}>
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Téléverser un document
+                Upload a document
             </Button>
         </div>
     );
@@ -46,10 +46,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 <Input placeholder="Rechercher des documents..." className="h-9 w-full max-w-xs" />
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={fetchDocuments} disabled={isLoading}>
-                        <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />Rafraîchir
+                        <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />Refresh
                     </Button>
                     <Button size="sm" onClick={onUploadClick}>
-                        <PlusIcon className="h-4 w-4 mr-2" />Téléverser
+                        <PlusIcon className="h-4 w-4 mr-2" />Upload
                     </Button>
                 </div>
             </div>
@@ -60,8 +60,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                                 <TableHead className="w-8"><Checkbox /></TableHead>
-                                <TableHead>Nom du Fichier</TableHead>
-                                <TableHead>Date d'ajout</TableHead>
+                                <TableHead>File Name</TableHead>
+                                <TableHead>Date Added</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>

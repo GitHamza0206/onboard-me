@@ -113,30 +113,30 @@ export function UsersPage() {
             <SidebarInset>
                 <main className="flex-1 p-8 space-y-8">
                     <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-bold">Gestion des Utilisateurs</h1>
-                        <Button onClick={() => setAddUserModalOpen(true)}>Ajouter un utilisateur</Button>
+                        <h1 className="text-3xl font-bold">User Management</h1>
+                        <Button onClick={() => setAddUserModalOpen(true)}>Add User</Button>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
                         <Table>
                             <TableHeader>
                                  <TableRow>
-                                    <TableHead className="w-[300px]">Nom complet</TableHead>
-                                    <TableHead>Statut d'onboarding</TableHead>
-                                    <TableHead>Progression (%)</TableHead>
-                                    <TableHead>Date d'inscription</TableHead>
-                                    <TableHead>Dernière activité</TableHead>
+                                    <TableHead className="w-[300px]">Full Name</TableHead>
+                                    <TableHead>Onboarding Status</TableHead>
+                                    <TableHead>Progress (%)</TableHead>
+                                    <TableHead>Registration Date</TableHead>
+                                    <TableHead>Last Activity</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center">Chargement...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>
                                 ) : users.length === 0 ? (
                                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                                         {!token ? "Authentification requise" : hasError ? (
                                             <div className="space-y-2">
-                                                <p>Erreur de connexion au serveur</p>
+                                                <p>Server connection error</p>
                                                 <Button variant="outline" size="sm" onClick={fetchUsers}>
-                                                    Réessayer
+                                                Retry
                                                 </Button>
                                             </div>
                                         ) : "Aucun utilisateur trouvé"}

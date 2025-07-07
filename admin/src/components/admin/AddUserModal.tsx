@@ -66,25 +66,25 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onU
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter un nouvel utilisateur</DialogTitle>
+          <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-             L'utilisateur sera créé directement avec le mot de passe fourni.
+          The user will be created immediately with the provided password.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2"><Label htmlFor="prenom">Prénom</Label><Input id="prenom" value={prenom} onChange={(e) => setPrenom(e.target.value)} /></div>
-          <div className="grid gap-2"><Label htmlFor="nom">Nom</Label><Input id="nom" value={nom} onChange={(e) => setNom(e.target.value)} /></div>
+          <div className="grid gap-2"><Label htmlFor="prenom">First Name</Label><Input id="prenom" value={prenom} onChange={(e) => setPrenom(e.target.value)} /></div>
+          <div className="grid gap-2"><Label htmlFor="nom">ast Name</Label><Input id="nom" value={nom} onChange={(e) => setNom(e.target.value)} /></div>
           <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
           {/* Add password input field */}
           <div className="grid gap-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
         </div>
          {error && <p className="text-sm text-red-500">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>{isLoading ? "Ajout..." : "Ajouter l'utilisateur"}</Button>
+          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={isLoading}>{isLoading ? "Adding..." : "Add User"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
