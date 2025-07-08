@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import { SimbaDoc } from "@/types/document";
 
 const integrations = [
-  { name: "GitHub", icon: <Github className="h-5 w-5" />, type: "integration" },
   { name: "Notion", icon: <BookText className="h-5 w-5" />, type: "integration" },
 ];
 

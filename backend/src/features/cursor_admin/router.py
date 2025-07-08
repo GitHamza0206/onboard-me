@@ -1,0 +1,75 @@
+from fastapi import APIRouter, HTTPException, Body
+from pydantic import BaseModel
+from uuid import uuid4
+from typing import Any
+
+from .services.graph import graph
+from .services.apply_changes import apply_course_changes
+from src.features.formations.schema import FormationStructureCreate
+
+router = APIRouter()
+
+class InvokeRequest(BaseModel):
+    formation_id: int
+    prompt: str
+    thread_id: str | None = None
+
+class ApplyChangesRequest(BaseModel):
+    formation_id: int
+    proposed_structure: dict[str, Any]
+
+@router.post("/cursor/invoke")
+async def invoke_agent(request: InvokeRequest):
+    """
+    Invokes the cursor agent to process a user prompt for a given formation.
+    """
+    try:
+        thread_id = request.thread_id or str(uuid4())
+        thread = {"configurable": {"thread_id": thread_id}}
+        
+        # We now prime the agent with a more specific prompt to guide it
+        # towards using our tool.
+        prompt = (
+            "You are a course editing assistant. "
+            f"A user wants to modify the course with ID '{request.formation_id}'. "
+            "First, call the `get_course_structure` tool to understand the course. "
+            "Here is the user's request: "
+            f"'{request.prompt}'"
+        )
+        
+        # The input to the graph should be a dictionary where keys match the `State` TypedDict
+        graph_input = {
+            "formation_id": request.formation_id,
+            "user_prompt": request.prompt,
+            "messages": [("user", prompt)],
+        }
+
+        # For now, we'll just stream and print. Later, we'll handle the response properly.
+        async for event in graph.astream(graph_input, thread):
+            print(event) # For debugging on the server side
+
+        # We will return the final state or the diff once the graph is implemented
+        final_state = await graph.aget_state(thread)
+
+        return {"thread_id": thread_id, "final_state": final_state.values}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@router.post("/cursor/apply-changes")
+async def apply_changes_endpoint(request: ApplyChangesRequest):
+    """
+    Receives the final, admin-approved course structure and applies it to the database.
+    """
+    try:
+        # Pydantic will validate the incoming dict against our schema
+        validated_structure = FormationStructureCreate.model_validate(request.proposed_structure)
+        
+        result = apply_course_changes(request.formation_id, validated_structure)
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=500, detail=result["message"])
+            
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
