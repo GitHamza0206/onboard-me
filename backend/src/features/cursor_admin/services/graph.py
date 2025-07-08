@@ -1,38 +1,40 @@
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import ToolMessage
 from .state import State
+from .nodes.tools import get_course_structure
+from shared.llm import llm
 
 # ===========================================
-# Define the nodes (as placeholders for now)
+# Define the tools
 # ===========================================
+tools = [get_course_structure]
+tool_node = ToolNode(tools)
 
-def get_course_structure_node(state: State):
-    """
-    Placeholder node to fetch the course structure.
-    In Task 2, this will be replaced by a proper tool call.
-    """
-    print("--- Fetching Course Structure ---")
-    formation_id = state.get("formation_id")
-    print(f"Formation ID: {formation_id}")
-    # In reality, we'd call the service here and update the state
-    return {"current_structure": {"title": "Placeholder Course", "modules": []}}
+# ===========================================
+# Define the agent
+# ===========================================
+model = llm 
+model = model.bind_tools(tools)
 
-def generate_new_structure_node(state: State):
+def should_continue(state: State) -> str:
     """
-    Placeholder for the agent generating the new structure.
+    Determines the next step for the agent.
     """
-    print("--- Agent is generating new structure ---")
-    # Agent logic will go here
-    return {"proposed_structure": {"title": "New Placeholder Course", "modules": []}}
+    if isinstance(state['messages'][-1], ToolMessage):
+        return "end" # The tool has been called, for now we end here.
+    if state['messages'][-1].tool_calls:
+        return "continue"
+    return "end"
 
-def calculate_diff_node(state: State):
+def call_model(state: State) -> dict:
     """
-    Placeholder for calculating the diff between old and new structures.
+    The main agent node. It calls the model with the current state and returns the result.
     """
-    print("--- Calculating Diff ---")
-    # Difftastic logic will go here
-    return {"diff": "--- Diff --- \n...changes..."}
+    messages = state['messages']
+    response = model.invoke(messages)
+    return {"messages": [response]}
 
 
 # ===========================================
@@ -40,37 +42,39 @@ def calculate_diff_node(state: State):
 # ===========================================
 workflow = StateGraph(State)
 
-workflow.add_node("get_course_structure", get_course_structure_node)
-workflow.add_node("generate_new_structure", generate_new_structure_node)
-workflow.add_node("calculate_diff", calculate_diff_node)
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", tool_node)
 
 
 # ===========================================
 # Define the edges
 # ===========================================
-workflow.add_edge(START, "get_course_structure")
-workflow.add_edge("get_course_structure", "generate_new_structure")
-workflow.add_edge("generate_new_structure", "calculate_diff")
+workflow.set_entry_point("agent")
 
-# The graph will interrupt after calculating the diff to wait for human approval.
-# We will configure this interruption later.
-workflow.add_edge("calculate_diff", END)
+workflow.add_conditional_edges(
+    "agent",
+    should_continue,
+    {"continue": "tools", "end": END}
+)
+workflow.add_edge("tools", "agent")
 
 
 # ===========================================
 # Compile the graph
 # ===========================================
 memory = MemorySaver()
-graph = workflow.compile(
-    checkpointer=memory,
-    # We will add the interrupt here in a later task
-    # interrupt_after=["calculate_diff"], 
-)
+graph = workflow.compile(checkpointer=memory)
 
-#graph.get_graph().print_ascii()
 
 if __name__ == "__main__":
+    prompt = """
+You are a course editing assistant. 
+A user wants to modify the course with ID '84'. 
+First, call the `get_course_structure` tool to understand the course. 
+Here is the user's request: 
+'change the title of the first lesson to 'TOTOTOTO''
+    """
     thread = {"configurable": {"thread_id": "1"}}
-    for event in graph.stream({"messages": [("user", "change the first course title to 'New Title'")]}, thread):
+    for event in graph.stream({"messages": [("user", prompt)]}, thread):
         for v in event.values():
             print(v)

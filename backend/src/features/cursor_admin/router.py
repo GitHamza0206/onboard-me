@@ -20,10 +20,18 @@ async def invoke_agent(request: InvokeRequest):
         thread_id = request.thread_id or str(uuid4())
         thread = {"configurable": {"thread_id": thread_id}}
         
-        # The input to the graph should be a dictionary where keys match the `State` TypedDict
+        # We now prime the agent with a more specific prompt to guide it
+        # towards using our tool.
+        prompt = (
+            "You are a course editing assistant. "
+            f"A user wants to modify the course with ID '{request.formation_id}'. "
+            "First, call the `get_course_structure` tool to understand the course. "
+            "Here is the user's request: "
+            f"'{request.prompt}'"
+        )
+        
         graph_input = {
-            "formation_id": request.formation_id,
-            "messages": [("user", request.prompt)],
+            "messages": [("user", prompt)],
         }
 
         # For now, we'll just stream and print. Later, we'll handle the response properly.
