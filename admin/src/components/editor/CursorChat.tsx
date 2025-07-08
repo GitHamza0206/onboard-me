@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { SendHorizonal, Check, X } from "lucide-react";
-import { invokeAgent, applyChanges } from "@/app/api/cursor";
+import { invokeAgent } from "@/app/api/cursor";
+import { FormationStructure } from "@/types/formation";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,9 +15,11 @@ interface Message {
 
 interface CursorChatProps {
   formationId: number;
+  formation: FormationStructure;
+  onFormationUpdate: (newFormation: FormationStructure) => void;
 }
 
-export function CursorChat({ formationId }: CursorChatProps) {
+export function CursorChat({ formationId, formation, onFormationUpdate }: CursorChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hello! I'm here to help you edit this course. What would you like to change?" }
   ]);
@@ -25,7 +28,7 @@ export function CursorChat({ formationId }: CursorChatProps) {
   const [threadId, setThreadId] = useState<string | null>(null);
   
   const [diff, setDiff] = useState<string | null>(null);
-  const [proposedStructure, setProposedStructure] = useState<any | null>(null);
+  const [proposedStructure, setProposedStructure] = useState<FormationStructure | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,12 +45,12 @@ export function CursorChat({ formationId }: CursorChatProps) {
     setIsLoading(true);
 
     try {
-      const result = await invokeAgent(formationId, trimmedInput, threadId);
+      const result = await invokeAgent(formationId, trimmedInput, threadId, formation);
       
       setThreadId(result.thread_id);
       
       const finalState = result.final_state;
-      if (finalState.diff) {
+      if (finalState.diff && finalState.proposed_structure) {
         setDiff(finalState.diff);
         setProposedStructure(finalState.proposed_structure);
       } else {
@@ -61,23 +64,16 @@ export function CursorChat({ formationId }: CursorChatProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, formationId, threadId]);
+  }, [inputValue, isLoading, formationId, threadId, formation]);
 
   const handleAccept = async () => {
     if (!proposedStructure) return;
-    setIsLoading(true);
-    try {
-      await applyChanges(formationId, proposedStructure);
-      setMessages(prev => [...prev, { role: "assistant", content: "Changes applied successfully!" }]);
-      setDiff(null);
-      setProposedStructure(null);
-    } catch (error) {
-      console.error("Failed to apply changes:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      setMessages(prev => [...prev, { role: "assistant", content: `Error applying changes: ${errorMessage}` }]);
-    } finally {
-      setIsLoading(false);
-    }
+    
+    onFormationUpdate(proposedStructure);
+
+    setDiff(null);
+    setProposedStructure(null);
+    setMessages(prev => [...prev, { role: "assistant", content: "Changes have been applied to the editor. Click 'Save' in the top right to persist them." }]);
   };
   
   const handleReject = () => {

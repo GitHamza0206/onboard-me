@@ -1,36 +1,37 @@
+const API_URL = import.meta.env.VITE_API_URL;
+import { FormationStructure } from "@/types/formation";
+
 export async function invokeAgent(
-  formation_id: number,
-  prompt: string,
-  thread_id: string | null
+  formationId: number, 
+  prompt: string, 
+  threadId: string | null,
+  formation: FormationStructure
 ) {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/cursor/invoke`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ formation_id, prompt, thread_id }),
+  const response = await fetch(`${API_URL}/cursor-admin/invoke`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      formation_id: formationId, 
+      prompt: prompt,
+      thread_id: threadId,
+      formation_structure: formation // Pass the whole structure
+    }),
   });
-
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Failed to invoke agent");
+    const errorBody = await response.text();
+    throw new Error(`Failed to invoke agent: ${response.status} ${errorBody}`);
   }
-
   return response.json();
 }
 
-export async function applyChanges(
-  formation_id: number,
-  proposed_structure: any
-) {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/cursor/apply-changes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ formation_id, proposed_structure }),
+export async function applyChanges(formationId: number, proposedStructure: any) {
+  const response = await fetch(`${API_URL}/cursor-admin/apply-changes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formation_id: formationId, proposed_structure: proposedStructure }),
   });
-
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Failed to apply changes");
+    throw new Error('Failed to apply changes');
   }
-
   return response.json();
 } 
