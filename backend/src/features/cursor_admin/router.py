@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from uuid import uuid4
+from typing import Any
 
 from .services.graph import graph
+from .services.apply_changes import apply_course_changes
+from src.features.formations.schema import FormationStructureCreate
 
 router = APIRouter()
 
@@ -10,6 +13,10 @@ class InvokeRequest(BaseModel):
     formation_id: int
     prompt: str
     thread_id: str | None = None
+
+class ApplyChangesRequest(BaseModel):
+    formation_id: int
+    proposed_structure: dict[str, Any]
 
 @router.post("/cursor/invoke")
 async def invoke_agent(request: InvokeRequest):
@@ -46,5 +53,23 @@ async def invoke_agent(request: InvokeRequest):
 
         return {"thread_id": thread_id, "final_state": final_state.values}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@router.post("/cursor/apply-changes")
+async def apply_changes_endpoint(request: ApplyChangesRequest):
+    """
+    Receives the final, admin-approved course structure and applies it to the database.
+    """
+    try:
+        # Pydantic will validate the incoming dict against our schema
+        validated_structure = FormationStructureCreate.model_validate(request.proposed_structure)
+        
+        result = apply_course_changes(request.formation_id, validated_structure)
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=500, detail=result["message"])
+            
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
