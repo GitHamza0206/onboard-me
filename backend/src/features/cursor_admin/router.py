@@ -30,7 +30,10 @@ async def invoke_agent(request: InvokeRequest):
             f"'{request.prompt}'"
         )
         
+        # The input to the graph should be a dictionary where keys match the `State` TypedDict
         graph_input = {
+            "formation_id": request.formation_id,
+            "user_prompt": request.prompt,
             "messages": [("user", prompt)],
         }
 
