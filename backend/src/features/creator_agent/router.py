@@ -518,7 +518,7 @@ async def generate_structure(
 
     # 2. Exécute *synchroniquement* le graph
     try:
-        result = create_structure(state)
+        result = await graph.ainvoke(state, cfg)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
