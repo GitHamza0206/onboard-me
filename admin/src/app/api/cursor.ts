@@ -7,7 +7,7 @@ export async function invokeAgent(
   threadId: string | null,
   formation: FormationStructure
 ) {
-  const response = await fetch(`${API_URL}/cursor-admin/invoke`, {
+  const response = await fetch(`${API_URL}/cursor/invoke`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
@@ -25,7 +25,7 @@ export async function invokeAgent(
 }
 
 export async function applyChanges(formationId: number, proposedStructure: any) {
-  const response = await fetch(`${API_URL}/cursor-admin/apply-changes`, {
+  const response = await fetch(`${API_URL}/cursor/apply-changes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ formation_id: formationId, proposed_structure: proposedStructure }),

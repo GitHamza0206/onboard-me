@@ -5,6 +5,7 @@ import { CourseNav } from "@/components/course/course-nav";
 import { CursorChat } from "@/components/editor/CursorChat";
 import { HomeHeader } from "@/components/generation/HomeHeader";
 import { useToast } from "@/hooks/use-toast";
+import { FormationStructure } from "@/types/formation";
 
 import { useParams } from "react-router-dom";
 import { useAuth } from "../auth/authContext";
@@ -45,6 +46,35 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
   const [modules, setModules] = useState(injectQuizLessonsForAdmin(formation).modules);
   const [activeLesson, setActiveLesson] = useState<LessonData | null>(null);
   const { toast } = useToast();
+
+  const handleFormationUpdate = (newFormation: FormationStructure) => {
+    setCourseTitle(newFormation.title);
+    // The new formation from AI won't have the quiz lessons.
+    // We need to re-inject them.
+    // Also, we need to convert from FormationStructure to FormationData, which mainly involves
+    // handling potential nulls and casting.
+    const formationData: FormationData = {
+        title: newFormation.title,
+        modules: newFormation.modules.map(m => ({
+            id: m.id,
+            title: m.title,
+            lessons: m.lessons.map(l => ({
+                id: l.id,
+                title: l.title,
+                description: l.description ?? '',
+                content: l.content ?? '',
+            }))
+        }))
+    };
+    
+    setModules(injectQuizLessonsForAdmin(formationData).modules);
+
+    toast({
+        title: "📝 IA changes applied",
+        description: "The proposed changes have been applied in the editor. Don't forget to save.",
+        variant: "default"
+    });
+  };
 
   // Fonction pour obtenir le titre du module d'une leçon
   const getModuleTitle = (lessonId: string): string => {
@@ -107,6 +137,11 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
     }
   };
 
+  const currentFormation = filterQuizFromFormation({
+    title: courseTitle,
+    modules: modules,
+  });
+
   return (
     <div className="flex h-screen bg-white text-gray-800 flex-col">
       <HomeHeader title={courseTitle} setTitle={setCourseTitle} onSave={handleSave} />
@@ -123,7 +158,13 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
           currentLesson={activeLesson}
           moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
         />
-        {courseId && <CursorChat formationId={parseInt(courseId, 10)} />}
+        {courseId && (
+          <CursorChat
+            formationId={parseInt(courseId, 10)}
+            formation={currentFormation}
+            onFormationUpdate={handleFormationUpdate}
+          />
+        )}
       </div>
     </div>
   );
