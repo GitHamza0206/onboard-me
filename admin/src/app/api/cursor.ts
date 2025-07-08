@@ -1,5 +1,3 @@
-
-
 export async function invokeAgent(
   formation_id: number,
   prompt: string,
@@ -23,7 +21,7 @@ export async function applyChanges(
   formation_id: number,
   proposed_structure: any
 ) {
-  const response = await fetch(`${API_URL}/cursor/apply-changes`, {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/cursor/apply-changes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ formation_id, proposed_structure }),

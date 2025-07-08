@@ -2,7 +2,7 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 // Base URL for the backend API.
 // It's good practice to use environment variables for this in a real application.
-const API_URL = import.meta.env.VITE_API_URL + "/agent";
+//const API_URL = import.meta.env.VITE_API_URL + "/agent";
 
 /**
  * Helper types based on the backend's Python `agent.py` script.
@@ -63,7 +63,7 @@ export const streamAgentResponse = async (text: string, threadId: string | null,
   const { onMessage, onValues, onError, onClose } = callbacks;
 
   try {
-    await fetchEventSource(`${API_URL}/runs/stream`, {
+    await fetchEventSource(`${import.meta.env.VITE_API_URL}/agent/runs/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

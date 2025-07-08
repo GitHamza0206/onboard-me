@@ -86,6 +86,12 @@ export function CursorChat({ formationId }: CursorChatProps) {
     setMessages(prev => [...prev, { role: "assistant", content: "Changes rejected. What would you like to do next?" }]);
   };
 
+  const cleanDiff = (rawDiff: string) => {
+    if (!rawDiff) return "";
+    // Split by lines, remove the first two lines (file paths), and rejoin
+    return rawDiff.split('\n').slice(2).join('\n');
+  };
+
   return (
     <div className="flex-shrink-0 w-96 border-l flex flex-col h-full">
       <header className="p-4 border-b flex items-center gap-3">
@@ -113,7 +119,11 @@ export function CursorChat({ formationId }: CursorChatProps) {
           {diff && (
             <div className="p-4 border rounded-lg bg-muted">
                 <h3 className="font-semibold mb-2">Proposed Changes:</h3>
-                <pre className="text-xs whitespace-pre-wrap font-mono bg-background p-2 rounded-md">{diff}</pre>
+                <ScrollArea className="max-h-64">
+                    <pre className="text-xs whitespace-pre-wrap font-mono bg-background p-2 rounded-md overflow-x-auto">
+                        {cleanDiff(diff)}
+                    </pre>
+                </ScrollArea>
                 <div className="flex justify-end gap-2 mt-4">
                     <Button variant="outline" size="sm" onClick={handleReject} disabled={isLoading}><X className="h-4 w-4 mr-1" /> Reject</Button>
                     <Button size="sm" onClick={handleAccept} disabled={isLoading}><Check className="h-4 w-4 mr-1" /> Accept</Button>

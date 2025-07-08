@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { CourseContent } from "@/components/course/course-content";
 import { CourseNav } from "@/components/course/course-nav";
-import { SupportChat } from "@/components/course/support-chat";
+import { CursorChat } from "@/components/editor/CursorChat";
 import { HomeHeader } from "@/components/generation/HomeHeader";
 import { useToast } from "@/hooks/use-toast";
 
@@ -123,7 +123,7 @@ export function OnboardingPage({ formation }: OnboardingPageProps) {
           currentLesson={activeLesson}
           moduleTitle={activeLesson ? getModuleTitle(activeLesson.id) : ''}
         />
-        <SupportChat />
+        {courseId && <CursorChat formationId={parseInt(courseId, 10)} />}
       </div>
     </div>
   );
