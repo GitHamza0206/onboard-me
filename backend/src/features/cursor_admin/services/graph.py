@@ -10,6 +10,8 @@ import os
 
 from .state import State
 from .nodes.tools import get_course_structure
+from src.shared.deep_merge import deep_merge
+from shared.llm import llm
 
 # ===========================================
 # Define the tools
@@ -20,7 +22,7 @@ tool_node = ToolNode(tools)
 # ===========================================
 # Define the agent model
 # ===========================================
-model = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
+model = llm
 model = model.bind_tools(tools)
 
 # ===========================================
@@ -74,6 +76,24 @@ def parse_proposed_structure(state: State) -> dict:
     except json.JSONDecodeError as e:
         error_msg = f"Error: Agent returned invalid JSON. {e}"
         return {"proposed_structure": None, "diff": error_msg}
+
+
+def merge_changes_node(state: State) -> dict:
+    """
+    Merges the agent's partial changes into the current course structure.
+    """
+    print("--- Merging Changes ---")
+    current_structure = state.get("current_structure")
+    partial_changes = state.get("proposed_structure") # At this point, this is the partial JSON
+
+    if not current_structure or not partial_changes:
+        return {"diff": "Error: Cannot merge, missing current structure or partial changes."}
+
+    # Perform the deep merge
+    merged_structure = deep_merge(current_structure, partial_changes)
+    
+    # The final, merged structure is now the official "proposed_structure"
+    return {"proposed_structure": merged_structure}
 
 
 def calculate_diff_node(state: State) -> dict:
@@ -168,6 +188,7 @@ workflow.add_node("agent", call_model)
 workflow.add_node("tools", tool_node)
 workflow.add_node("save_course_structure", save_course_structure)
 workflow.add_node("parse_proposed_structure", parse_proposed_structure)
+workflow.add_node("merge_changes", merge_changes_node)
 workflow.add_node("calculate_diff", calculate_diff_node)
 
 
@@ -188,7 +209,8 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("tools", "save_course_structure")
 workflow.add_edge("save_course_structure", "agent")
-workflow.add_edge("parse_proposed_structure", "calculate_diff")
+workflow.add_edge("parse_proposed_structure", "merge_changes")
+workflow.add_edge("merge_changes", "calculate_diff")
 
 
 # ===========================================
@@ -210,7 +232,7 @@ You are a course editing assistant.
 A user wants to modify the course with ID '84'. 
 First, call the `get_course_structure` tool to understand the course. 
 Here is the user's request: 
-'change the title of the first lesson to 'TOTOTOTO''
+'change the title 'Mastering Advanced Sales Techniques' of the first lesson to 'TOTOTOTO''
     """
     thread = {"configurable": {"thread_id": "1"}}
     for event in graph.stream({"messages": [("user", prompt)]}, thread):

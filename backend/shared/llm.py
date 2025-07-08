@@ -27,7 +27,7 @@ def get_llm(model_identifier, streaming=True):
 
     # Paramètres communs pour tous les modèles
     params = {
-        "temperature": 0.6,
+        "temperature": 0,
         "streaming": streaming,
     }
 
