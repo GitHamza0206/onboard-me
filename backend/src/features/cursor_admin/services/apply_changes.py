@@ -1,5 +1,5 @@
 from src.supabase_client import supabase
-from src.features.formations.schema import FormationStructureCreate, LessonStructure
+from src.features.formations.schema import FormationStructureCreate, ModuleStructure, SubmoduleStructure
 
 def apply_course_changes(formation_id: int, proposed_structure: FormationStructureCreate):
     """
@@ -8,7 +8,7 @@ def apply_course_changes(formation_id: int, proposed_structure: FormationStructu
     """
     try:
         # We will collect new lessons to be inserted after the main transaction
-        lessons_to_add_separately: list[tuple[int, LessonStructure]] = []
+        lessons_to_add_separately: list[tuple[int, ModuleStructure]] = []
 
         # Start a transaction to ensure all changes are applied atomically
         with supabase.batch() as batch:

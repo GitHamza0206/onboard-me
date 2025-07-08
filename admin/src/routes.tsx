@@ -6,7 +6,7 @@ import { AuthPage } from "./app/auth/page";
 import { RegisterPage } from "./app/auth/register";
 import { OnboardingPage } from "./app/generation/content";
 import { CoursesPage } from "@/app/adminCouses/CoursesPage";
-import { EditorPage } from "./app/editor/page";
+import EditorPage from "./app/editor/page";
 import Layout from "./layout";
 import { CreatePage } from "./app/create/page";
 import { GenerationPage } from "./app/generation/structure";
